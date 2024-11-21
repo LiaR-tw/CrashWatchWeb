@@ -30,7 +30,6 @@ const UsersTable: React.FC = () => {
   const renderContent = () => {
     if (currentView === "table") {
       return (
-        //Institution to which this user belongs
         <div>
           <h2 className="text-3xl font-semibold mb-6 text-center text-gray-800">All Users</h2>
           <div className="flex justify-between items-center mb-6">
@@ -39,9 +38,17 @@ const UsersTable: React.FC = () => {
               placeholder="Search"
               className="border rounded-lg px-4 py-2 w-1/3 text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-            <select className="border rounded-lg px-4 py-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <option value="newest">Sort by: Newest</option>
-              <option value="oldest">Sort by: Oldest</option>
+            <select
+              value={filter} // Asociar el estado con el valor del select
+              onChange={(e) => setFilter(e.target.value)} // Actualizar el estado cuando se selecciona un valor
+              className="border rounded-lg px-4 py-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="All">All</option>
+              <option value="Viedma">Hospital Viedma</option>
+              <option value="Univalle">Hospital Univalle</option>
+              <option value="Transit">Transit</option>
+              <option value="Sar">Sar</option>
+              <option value="Comand">Comand Police</option>
             </select>
           </div>
           <table className="min-w-full bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
