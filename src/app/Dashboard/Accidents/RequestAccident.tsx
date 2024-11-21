@@ -39,12 +39,13 @@ const RequestAccident: React.FC<RequestAccidentProps> = ({ accidentId, onBack })
 
   return (
     <div className="p-6 relative">
-      <button
-        onClick={() => handleOpenModal("back")}
-        className="bg-blue-900 text-white px-4 py-2 rounded hover:bg-blue-800 mb-4"
-      >
-        Back to accidents
-      </button>
+     <button
+      onClick={() => handleOpenModal("back")}
+      className="bg-gradient-to-r from-[#4F46E5] to-[#6B7AE8] text-white px-4 py-2 rounded hover:bg-gradient-to-r hover:from-[#6B7AE8] hover:to-[#4F46E5] mb-4"
+    >
+      Back to accidents
+    </button>
+
 
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-bold mb-4">Accident Details</h2>
