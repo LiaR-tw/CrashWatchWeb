@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Register from "../Institutions/RegisterInstitution";
+import AccidentsView from "./page";
 
 type Institution = {
   name: string;
@@ -23,12 +24,72 @@ const institutions: Institution[] = [
 const CheckInstitutions: React.FC = () => {
   const [currentView, setCurrentView] = useState<string>("table");
   const [selectedInstitutions, setSelectedInstitutions] = useState<Record<number, boolean>>({});
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [modalContent, setModalContent] = useState<JSX.Element | null>(null);
 
   const handleCheckboxChange = (index: number) => {
     setSelectedInstitutions((prev) => ({
       ...prev,
       [index]: !prev[index],
     }));
+  };
+
+  const openModal = (type: "send" | "cancel") => {
+    const selectedCount = Object.values(selectedInstitutions).filter(Boolean).length;
+
+    if (type === "send") {
+      setModalContent(
+        <div>
+          <h3 className="text-xl font-semibold">Confirm Send</h3>
+          <p className="mt-2">
+            You have selected <strong>{selectedCount}</strong> institution(s). Are you sure you want to send them?
+          </p>
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                setIsModalOpen(false);
+                setCurrentView("accidents");
+              }}
+              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      );
+    } else if (type === "cancel") {
+      setModalContent(
+        <div>
+          <h3 className="text-xl font-semibold">Confirm Cancel</h3>
+          <p className="mt-2">Are you sure you want to cancel and exit?</p>
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400"
+            >
+              No
+            </button>
+            <button
+              onClick={() => {
+                setIsModalOpen(false);
+                setCurrentView("accidents");
+              }}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+            >
+              Yes, Exit
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    setIsModalOpen(true);
   };
 
   const renderContent = () => {
@@ -88,28 +149,37 @@ const CheckInstitutions: React.FC = () => {
               ))}
             </tbody>
           </table>
-          <div className="mt-6 text-center">
-          <button
-              onClick={() => setCurrentView("register")}
-              className="bg-red text-white px-6 py-3 rounded-lg hover:bg-[#6B7AE8] transition-colors duration-300"
+          <div className="mt-6 text-center flex justify-center gap-4">
+            <button
+              onClick={() => openModal("cancel")}
+              className="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-colors duration-300"
             >
               Cancel
             </button>
             <button
-              onClick={() => setCurrentView("register")}
-              className="bg-green text-white px-6 py-3 rounded-lg hover:bg-[#6B7AE8] transition-colors duration-300"
+              onClick={() => openModal("send")}
+              className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors duration-300"
             >
               Send
             </button>
           </div>
         </div>
       );
-    } else if (currentView === "register") {
-      return <Register />;
+    } else if (currentView === "accidents") {
+      return <AccidentsView />;
     }
   };
 
-  return <div className="px-8 py-6">{renderContent()}</div>;
+  return (
+    <div className="px-8 py-6">
+      {renderContent()}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white rounded-lg p-6 shadow-lg">{modalContent}</div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default CheckInstitutions;
