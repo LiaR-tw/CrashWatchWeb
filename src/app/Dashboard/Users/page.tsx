@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import Register from "./RegisterInstitution"
-type Institution = {
+import UserRegister from "./UserRegister";
+
+type User = {
   name: string;
   type: string;
   phone: string;
@@ -11,7 +12,7 @@ type Institution = {
   status: "Active" | "Inactive";
 };
 
-const institutions: Institution[] = [
+const Users: User[] = [
   { name: "Univalle", type: "Hospital", phone: "+591 95566117", email: "univalle231@gmail.com", city: "Cochabamba", status: "Active" },
   { name: "Viedman", type: "Hospital", phone: "+591 95566117", email: "viedma885@yahoo.com", city: "Cochabamba", status: "Inactive" },
   { name: "Transit", type: "Police", phone: "+591 8723952", email: "ronald@adobe.com", city: "Cochabamba", status: "Inactive" },
@@ -19,14 +20,14 @@ const institutions: Institution[] = [
   { name: "Sar", type: "Firefighters", phone: "+10 97881541", email: "jerome@google.com", city: "Santa Cruz", status: "Active" },
 ];
 
-const InstitutionsTable: React.FC = () => {
+const UsersTable: React.FC = () => {
   const [currentView, setCurrentView] = useState<string>("table");
 
   const renderContent = () => {
     if (currentView === "table") {
       return (
         <div>
-          <h2 className="text-3xl font-semibold mb-6 text-center text-gray-800">All Institutions</h2>
+          <h2 className="text-3xl font-semibold mb-6 text-center text-gray-800">All Users</h2>
           <div className="flex justify-between items-center mb-6">
             <input
               type="text"
@@ -50,20 +51,20 @@ const InstitutionsTable: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {institutions.map((institution, index) => (
+              {Users.map((User, index) => (
                 <tr key={index} className="border-b hover:bg-gray-50 transition-all duration-200">
-                  <td className="py-3 px-6">{institution.name}</td>
-                  <td className="py-3 px-6">{institution.type}</td>
-                  <td className="py-3 px-6">{institution.phone}</td>
-                  <td className="py-3 px-6">{institution.email}</td>
-                  <td className="py-3 px-6">{institution.city}</td>
+                  <td className="py-3 px-6">{User.name}</td>
+                  <td className="py-3 px-6">{User.type}</td>
+                  <td className="py-3 px-6">{User.phone}</td>
+                  <td className="py-3 px-6">{User.email}</td>
+                  <td className="py-3 px-6">{User.city}</td>
                   <td className="py-3 px-6">
                     <span
                       className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                        institution.status === "Active" ? "bg-green-200 text-green-700" : "bg-red-200 text-red-700"
+                        User.status === "Active" ? "bg-green-200 text-green-700" : "bg-red-200 text-red-700"
                       }`}
                     >
-                      {institution.status}
+                      {User.status}
                     </span>
                   </td>
                 </tr>
@@ -75,17 +76,17 @@ const InstitutionsTable: React.FC = () => {
               onClick={() => setCurrentView("register")} // Cambiar a la vista del registro
               className="bg-[#4F46E5] text-white px-6 py-3 rounded-lg hover:bg-[#6B7AE8] transition-colors duration-300"
             >
-              Register Institution
+              Register User
             </button>
           </div>
         </div>
       );
     } else if (currentView === "register") {
-      return <Register />;
+      return <UserRegister />;
     }
   };
 
   return <div className="px-8 py-6">{renderContent()}</div>;
 };
 
-export default InstitutionsTable;
+export default UsersTable;

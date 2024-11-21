@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 
 interface SidebarProps {
   onChangeView: (
-    view: "map" | "accidents"|"institutions" | "reports"
+    view: "map" | "accidents"|"institutions" | "reports" |"Users"
   ) => void;
 }
 
@@ -30,6 +30,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onChangeView }) => {
       label: "Reports",
       view: "reports",
       image: "/images/Icons/Reports.png",
+    },
+    {
+      label: "Users",
+      view: "Users",
+      image: "/images/Icons/Users.png",
     },
   ];
 

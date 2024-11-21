@@ -2,15 +2,15 @@
 
 import Image from "next/image";
 import React, { useState } from "react";
-import InstitutionsTable from "../Institutions/InstitutionsTable";
+import UsersTable from "./page";
 
 function RegisterForm({ onRegister }: { onRegister: () => void }) {
   return (
     <div className="flex items-center justify-center min-h-screen bg-white p-6">
       <div className="bg-white shadow-2xl rounded-lg p-8 max-w-lg w-full border border-gray-200">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Institutional Register</h1>
-          <p className="text-gray-600 text-sm mt-2">Fill in the details to register your institution.</p>
+          <h1 className="text-2xl font-bold text-gray-800">User Register</h1>
+          <p className="text-gray-600 text-sm mt-2">Fill in the details to register your new User.</p>
         </div>
 
         <form className="space-y-6" onSubmit={(e) => {
@@ -18,65 +18,65 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
           onRegister();
         }}>
           <div>
-            <label htmlFor="institutionName" className="block text-gray-800 font-medium">
-              Institutional Name
+            <label htmlFor="UserName" className="block text-gray-800 font-medium">
+              User Name
             </label>
             <input
-              id="institutionName"
+              id="UserName"
               type="text"
-              placeholder="Enter institution name"
+              placeholder="Enter User name"
               className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm transition-all"
             />
           </div>
 
           <div>
-            <label htmlFor="location" className="block text-gray-800 font-medium">
-              Location
+            <label htmlFor="surname" className="block text-gray-800 font-medium">
+              Surname
             </label>
             <input
-              id="location"
+              id="surname"
               type="text"
-              placeholder="Enter institution location"
+              placeholder="Enter User surname"
               className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm transition-all"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="latitude" className="block text-gray-800 font-medium">
-                Latitude
+              <label htmlFor="email" className="block text-gray-800 font-medium">
+                Email
               </label>
               <input
-                id="latitude"
+                id="email"
                 type="text"
-                placeholder="e.g., -17.3936"
+                placeholder="Enter User Email"
                 className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm transition-all"
               />
             </div>
             <div>
-              <label htmlFor="longitude" className="block text-gray-800 font-medium">
-                Longitude
+              <label htmlFor="phone" className="block text-gray-800 font-medium">
+                phone
               </label>
               <input
-                id="longitude"
+                id="phone"
                 type="text"
-                placeholder="e.g., -66.1566"
+                placeholder="Enter User Phone"
                 className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="category" className="block text-gray-800 font-medium">
-              Category
+            <label htmlFor="institution" className="block text-gray-800 font-medium">
+              Institution
             </label>
             <select
-              id="category"
+              id="inst"
               className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm transition-all"
             >
-              <option value="Health">Health</option>
-              <option value="Police">Police</option>
-              <option value="Firefighters">Firefighters</option>
+              <option value="Hospital Viedma">Hospital Viedma</option>
+              <option value="Sar">Sar</option>
+              <option value="Policia">Policia</option>
             </select>
           </div>
 
@@ -92,15 +92,15 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
   );
 }
 
-export default function Register() {
-  const [currentView, setCurrentView] = useState<"register" | "institutions">("register");
+export default function UserRegister() {
+  const [currentView, setCurrentView] = useState<"register" | "Users">("register");
 
   return (
     <div>
       {currentView === "register" ? (
-        <RegisterForm onRegister={() => setCurrentView("institutions")} />
+        <RegisterForm onRegister={() => setCurrentView("Users")} />
       ) : (
-        <InstitutionsTable />
+        <UsersTable />
       )}
     </div>
   );

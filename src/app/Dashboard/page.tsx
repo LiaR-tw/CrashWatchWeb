@@ -5,12 +5,13 @@ import Sidebar from "./SideBar";
 import Header from "./Header";
 import InstitutionsTable from "./Institutions/InstitutionsTable";
 import ReportsView from "./Reports/ReportsView";
-import Register from "./Register/page";
+import Register from "./Institutions/RegisterInstitution";
 import AccidentsView from "./Accidents/page";
 import MapView from "./Map/page";
+import UsersTable from "./Users/page";
 
 const Dashboard: React.FC = () => {
-  const [currentView, setCurrentView] = useState<"map" |"accidents"|"institutions" | "reports" | "Register" | "ChangePassword">("map");
+  const [currentView, setCurrentView] = useState<"map" |"accidents"|"institutions" | "reports" | "Register" | "ChangePassword"|"Users">("map");
 
   return (
     <div className="flex min-h-screen bg-cover bg-fixed">
@@ -24,6 +25,7 @@ const Dashboard: React.FC = () => {
           {currentView === "reports" && <ReportsView />}
           {currentView === "map" && <MapView />}
           {currentView === "Register" && <Register />}
+          {currentView === "Users" && <UsersTable />}
         </div>
       </main>
     </div>

@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import Register from "./RegisterInstitution"
+import Register from "../Institutions/RegisterInstitution";
+
 type Institution = {
   name: string;
   type: string;
@@ -19,8 +20,16 @@ const institutions: Institution[] = [
   { name: "Sar", type: "Firefighters", phone: "+10 97881541", email: "jerome@google.com", city: "Santa Cruz", status: "Active" },
 ];
 
-const InstitutionsTable: React.FC = () => {
+const CheckInstitutions: React.FC = () => {
   const [currentView, setCurrentView] = useState<string>("table");
+  const [selectedInstitutions, setSelectedInstitutions] = useState<Record<number, boolean>>({});
+
+  const handleCheckboxChange = (index: number) => {
+    setSelectedInstitutions((prev) => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
+  };
 
   const renderContent = () => {
     if (currentView === "table") {
@@ -41,6 +50,7 @@ const InstitutionsTable: React.FC = () => {
           <table className="min-w-full bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
             <thead className="bg-gradient-to-r from-[#4F46E5] to-[#6B7AE8] text-white">
               <tr>
+                <th className="py-3 px-6 text-left">Select</th>
                 <th className="py-3 px-6 text-left">Name</th>
                 <th className="py-3 px-6 text-left">Type</th>
                 <th className="py-3 px-6 text-left">Phone</th>
@@ -52,6 +62,14 @@ const InstitutionsTable: React.FC = () => {
             <tbody>
               {institutions.map((institution, index) => (
                 <tr key={index} className="border-b hover:bg-gray-50 transition-all duration-200">
+                  <td className="py-3 px-6">
+                    <input
+                      type="checkbox"
+                      checked={!!selectedInstitutions[index]}
+                      onChange={() => handleCheckboxChange(index)}
+                      className="form-checkbox h-5 w-5 text-indigo-600"
+                    />
+                  </td>
                   <td className="py-3 px-6">{institution.name}</td>
                   <td className="py-3 px-6">{institution.type}</td>
                   <td className="py-3 px-6">{institution.phone}</td>
@@ -71,11 +89,17 @@ const InstitutionsTable: React.FC = () => {
             </tbody>
           </table>
           <div className="mt-6 text-center">
-            <button
-              onClick={() => setCurrentView("register")} // Cambiar a la vista del registro
-              className="bg-[#4F46E5] text-white px-6 py-3 rounded-lg hover:bg-[#6B7AE8] transition-colors duration-300"
+          <button
+              onClick={() => setCurrentView("register")}
+              className="bg-red text-white px-6 py-3 rounded-lg hover:bg-[#6B7AE8] transition-colors duration-300"
             >
-              Register Institution
+              Cancel
+            </button>
+            <button
+              onClick={() => setCurrentView("register")}
+              className="bg-green text-white px-6 py-3 rounded-lg hover:bg-[#6B7AE8] transition-colors duration-300"
+            >
+              Send
             </button>
           </div>
         </div>
@@ -88,4 +112,4 @@ const InstitutionsTable: React.FC = () => {
   return <div className="px-8 py-6">{renderContent()}</div>;
 };
 
-export default InstitutionsTable;
+export default CheckInstitutions;
