@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 
 class Stat {
@@ -43,28 +43,40 @@ interface StatsCardsProps {
   onStatClick: (page: string) => void;
 }
 
-const StatsCards: React.FC<StatsCardsProps> = ({ onStatClick }) => (
-  <div className="grid grid-cols-3 gap-6 px-8 py-6">
-    {stats.map((stat, index) => (
-      <button
-        key={index}
-        className={`p-6 rounded-lg ${stat.color} shadow`}
-        onClick={() => onStatClick(stat.title.replace(" ", ""))}
-      >
-        <div className="flex items-center space-x-4">
-          <Image
-            src={stat.icon}
-            alt={stat.title}
-            width={50}
-            height={50}
-            className="w-12 h-12"
-          />
-          <h3 className="text-lg font-semibold">{stat.title}</h3>
-        </div>
-        <p className="text-2xl font-bold mt-4">{stat.value}</p>
-      </button>
-    ))}
-  </div>
-);
+const StatsCards: React.FC<StatsCardsProps> = ({ onStatClick }) => {
+  const [selectedStat, setSelectedStat] = useState<string | null>(null);
+
+  return (
+    <div className="grid grid-cols-3 gap-6 px-8 py-6">
+      {stats.map((stat, index) => {
+        const isSelected = selectedStat === stat.title;
+        return (
+          <button
+            key={index}
+            className={`p-6 rounded-lg ${stat.color} shadow ${
+              isSelected ? "ring-2 ring-offset-2 ring-gray-500 bg-opacity-80" : ""
+            }`}
+            onClick={() => {
+              setSelectedStat(stat.title);
+              onStatClick(stat.title.replace(" ", ""));
+            }}
+          >
+            <div className="flex items-center space-x-4">
+              <Image
+                src={stat.icon}
+                alt={stat.title}
+                width={50}
+                height={50}
+                className="w-12 h-12"
+              />
+              <h3 className="text-lg font-semibold">{stat.title}</h3>
+            </div>
+            <p className="text-2xl font-bold mt-4">{stat.value}</p>
+          </button>
+        );
+      })}
+    </div>
+  );
+};
 
 export default StatsCards;
