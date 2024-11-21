@@ -14,7 +14,7 @@ type User = {
 
 const Users: User[] = [
   { name: "Univalle", type: "Hospital", phone: "+591 95566117", email: "univalle231@gmail.com", city: "Cochabamba", status: "Active" },
-  { name: "Viedman", type: "Hospital", phone: "+591 95566117", email: "viedma885@yahoo.com", city: "Cochabamba", status: "Inactive" },
+  { name: "Viedma", type: "Hospital", phone: "+591 95566117", email: "viedma885@yahoo.com", city: "Cochabamba", status: "Inactive" },
   { name: "Transit", type: "Police", phone: "+591 8723952", email: "ronald@adobe.com", city: "Cochabamba", status: "Inactive" },
   { name: "Comand", type: "Police", phone: "+591 7832159", email: "marvin@tesla.com", city: "Cochabamba", status: "Active" },
   { name: "Sar", type: "Firefighters", phone: "+10 97881541", email: "jerome@google.com", city: "Santa Cruz", status: "Active" },
@@ -22,6 +22,10 @@ const Users: User[] = [
 
 const UsersTable: React.FC = () => {
   const [currentView, setCurrentView] = useState<string>("table");
+  const [filter, setFilter] = useState<string>("All"); // Estado para el filtro
+
+  // Filtrar los usuarios según el valor seleccionado
+  const filteredUsers = filter === "All" ? Users : Users.filter((user) => user.name === filter);
 
   const renderContent = () => {
     if (currentView === "table") {
@@ -34,9 +38,17 @@ const UsersTable: React.FC = () => {
               placeholder="Search"
               className="border rounded-lg px-4 py-2 w-1/3 text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-            <select className="border rounded-lg px-4 py-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <option value="newest">Sort by: Newest</option>
-              <option value="oldest">Sort by: Oldest</option>
+            <select
+              value={filter} // Asociar el estado con el valor del select
+              onChange={(e) => setFilter(e.target.value)} // Actualizar el estado cuando se selecciona un valor
+              className="border rounded-lg px-4 py-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="All">All</option>
+              <option value="Viedma">Hospital Viedma</option>
+              <option value="Univalle">Hospital Univalle</option>
+              <option value="Transit">Transit</option>
+              <option value="Sar">Sar</option>
+              <option value="Comand">Comand Police</option>
             </select>
           </div>
           <table className="min-w-full bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
@@ -51,20 +63,20 @@ const UsersTable: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {Users.map((User, index) => (
+              {filteredUsers.map((user, index) => (
                 <tr key={index} className="border-b hover:bg-gray-50 transition-all duration-200">
-                  <td className="py-3 px-6">{User.name}</td>
-                  <td className="py-3 px-6">{User.type}</td>
-                  <td className="py-3 px-6">{User.phone}</td>
-                  <td className="py-3 px-6">{User.email}</td>
-                  <td className="py-3 px-6">{User.city}</td>
+                  <td className="py-3 px-6">{user.name}</td>
+                  <td className="py-3 px-6">{user.type}</td>
+                  <td className="py-3 px-6">{user.phone}</td>
+                  <td className="py-3 px-6">{user.email}</td>
+                  <td className="py-3 px-6">{user.city}</td>
                   <td className="py-3 px-6">
                     <span
                       className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                        User.status === "Active" ? "bg-green-200 text-green-700" : "bg-red-200 text-red-700"
+                        user.status === "Active" ? "bg-green-200 text-green-700" : "bg-red-200 text-red-700"
                       }`}
                     >
-                      {User.status}
+                      {user.status}
                     </span>
                   </td>
                 </tr>
@@ -73,7 +85,7 @@ const UsersTable: React.FC = () => {
           </table>
           <div className="mt-6 text-center">
             <button
-              onClick={() => setCurrentView("register")} // Cambiar a la vista del registro
+              onClick={() => setCurrentView("register")}
               className="bg-[#4F46E5] text-white px-6 py-3 rounded-lg hover:bg-[#6B7AE8] transition-colors duration-300"
             >
               Register User

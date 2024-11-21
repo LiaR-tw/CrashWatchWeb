@@ -1,9 +1,9 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
 interface SidebarProps {
   onChangeView: (
-    view: "map" | "accidents"|"institutions" | "reports" |"Users"
+    view: "map" | "accidents" | "institutions" | "reports" | "Users" | "Profile"
   ) => void;
 }
 
@@ -19,12 +19,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onChangeView }) => {
     {
       label: "Accidents",
       view: "accidents",
-      image: "/images/Icons/Danger.png", 
+      image: "/images/Icons/Danger.png",
     },
     {
       label: "Institutions",
       view: "institutions",
-      image: "/images/Icons/institution.png", 
+      image: "/images/Icons/institution.png",
     },
     {
       label: "Reports",
@@ -43,21 +43,15 @@ const Sidebar: React.FC<SidebarProps> = ({ onChangeView }) => {
     onChangeView(view as any);
   };
 
-  useEffect(() => {
-    onChangeView(selectedView as any);
-  }, [selectedView, onChangeView]);
-
   return (
     <div className="fixed left-0 top-0 w-64 bg-white text-black shadow-lg h-screen flex flex-col z-10">
       <div className="p-4 font-extrabold text-4xl text-black border-b border-gray-300 shadow-md">
         Crash Watcher
       </div>
-\
+
       <div className="p-4 cursor-pointer mt-2 mb-4">
         <button
-          onClick={() => {
-            alert("Ver perfil");
-          }}
+          onClick={() => handleItemClick("Profile")}
           className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 text-black p-2 rounded-full shadow-md"
         >
           <img

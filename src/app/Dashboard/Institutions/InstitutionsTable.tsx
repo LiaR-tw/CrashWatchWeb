@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import Register from "./RegisterInstitution"
+import Register from "./RegisterInstitution";
+
 type Institution = {
   name: string;
   type: string;
@@ -21,6 +22,11 @@ const institutions: Institution[] = [
 
 const InstitutionsTable: React.FC = () => {
   const [currentView, setCurrentView] = useState<string>("table");
+  const [filterType, setFilterType] = useState<string>("");
+
+  const filteredInstitutions = institutions.filter(institution => 
+    filterType ? institution.type === filterType : true
+  );
 
   const renderContent = () => {
     if (currentView === "table") {
@@ -33,9 +39,16 @@ const InstitutionsTable: React.FC = () => {
               placeholder="Search"
               className="border rounded-lg px-4 py-2 w-1/3 text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-            <select className="border rounded-lg px-4 py-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <option value="newest">Sort by: Newest</option>
-              <option value="oldest">Sort by: Oldest</option>
+            <select 
+              className="border rounded-lg px-4 py-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              onChange={(e) => setFilterType(e.target.value)}
+              value={filterType}
+            >
+              <option value="">All</option>
+              <option value="Hospital">Hospital</option>
+              <option value="Firefighters">Firefighters</option>
+              <option value="Transit">Transit</option>
+              <option value="Police">Police</option>
             </select>
           </div>
           <table className="min-w-full bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
@@ -50,7 +63,7 @@ const InstitutionsTable: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {institutions.map((institution, index) => (
+              {filteredInstitutions.map((institution, index) => (
                 <tr key={index} className="border-b hover:bg-gray-50 transition-all duration-200">
                   <td className="py-3 px-6">{institution.name}</td>
                   <td className="py-3 px-6">{institution.type}</td>
