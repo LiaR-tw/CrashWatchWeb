@@ -8,8 +8,8 @@ export default function Register() {
   const router = useRouter();
 
   const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault(); // Prevenir comportamiento predeterminado del formulario
-    router.push("/Login"); // Redirigir al componente Dashboard
+    e.preventDefault(); 
+    router.push("/Login");
   }
 
 
@@ -20,21 +20,19 @@ export default function Register() {
           {/* Logo */}
           <div className="flex justify-center mb-4">
             <Image
-              src="/default-logo.png" // Cambia esto por la ruta de tu logo
+              src="/default-logo.png" 
               alt="Logo"
-              width={100} // Ajusta el ancho del logo
-              height={100} // Ajusta la altura del logo
-              className="rounded-full" // Opcional: Da forma redonda al logo
+              width={100}
+              height={100} 
+              className="rounded-full"
             />
           </div>
 
-          {/* Título y descripción */}
           <h1 className="text-2xl font-bold text-blue-900 mt-4">Institutional Register</h1>
           <p className="text-blue-900 text-sm">Please fill in the details to register</p>
         </div>
 
         <form className="space-y-4">
-          {/* Name Inputs (First Name and Last Name) */}
           <div className="flex space-x-4">
             <div className="w-1/2">
               <label htmlFor="firstName" className="block text-blue-900 font-medium">
@@ -59,7 +57,6 @@ export default function Register() {
               />
             </div>
           </div>
-          {/* Latitude and Longitude Inputs */}
           <div className="flex space-x-4">
             <div className="w-1/2">
               <label htmlFor="latitude" className="block text-blue-900 font-medium">
@@ -85,7 +82,6 @@ export default function Register() {
             </div>
           </div>
 
-          {/* Role Select */}
           <div>
             <label htmlFor="role" className="block text-blue-900 font-medium">
               Category
@@ -100,7 +96,6 @@ export default function Register() {
             </select>
           </div>
 
-          {/* Register Button */}
           <button
             onClick={handleLogin}
             type="submit"

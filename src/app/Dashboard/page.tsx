@@ -10,17 +10,15 @@ import Register from "./Register/page";
 import ChangePassword from "./ChangePassword/page";
 
 const Dashboard: React.FC = () => {
-  const [currentView, setCurrentView] = useState<"institutions" | "reports" | "map" | "Register" | "ChangePassword">("institutions");
+  const [currentView, setCurrentView] = useState<"map" | "institutions" | "reports" | "Register" | "ChangePassword">("map");
 
   return (
-    <div className="flex bg-gradient-to-br from-[#1e3a8a] to-[#000000] min-h-screen">
-      {/* Sidebar */}
+    <div className="flex min-h-screen bg-cover bg-fixed">
       <Sidebar onChangeView={setCurrentView} />
 
-      <main className="flex-1 ml-64 bg-[#1e3a8a]"> {/* ml-64 para dejar espacio para el Sidebar */}
+      <main className="flex-1 ml-64 bg-white p-6 rounded-tl-3xl rounded-bl-3xl shadow-lg">
         <Header />
-        <div className="px-8 py-6">
-          {/* Solo renderiza la vista seleccionada */}
+        <div className="px-8 py-6 bg-white rounded-lg shadow-md">
           {currentView === "institutions" && <InstitutionsTable />}
           {currentView === "reports" && <ReportsView />}
           {currentView === "map" && <MapView />}

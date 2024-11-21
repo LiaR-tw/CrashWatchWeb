@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 
-// Definición del tipo Report
 type Report = {
   id: number;
   title: string;
@@ -10,57 +9,51 @@ type Report = {
   status: "Pending" | "Completed";
 };
 
-// Datos de los reportes
 const reports: Report[] = [
   { id: 1, title: "Annual Report 2024", date: "2024-10-15", status: "Completed" },
   { id: 2, title: "Incident Report", date: "2024-10-20", status: "Pending" },
   { id: 3, title: "Monthly Analysis", date: "2024-11-01", status: "Completed" },
 ];
 
-// Componente para mostrar la tabla y los detalles dinámicos
 const ReportsTable: React.FC = () => {
-  // Estado para manejar el reporte seleccionado
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
 
   return (
     <div className="mt-6">
-      {/* Título */}
-      <h2 className="text-2xl font-bold mb-4">Reports</h2>
+      <h2 className="text-3xl font-semibold mb-6 text-center text-gray-800">Reports</h2>
 
-      {/* Contenedor principal */}
-      <div className="flex">
-        {/* Tabla de reportes */}
+      <div className="flex gap-6">
         <div className={`w-${selectedReport ? "2/3" : "full"} transition-all`}>
-          <table className="min-w-full bg-white rounded-lg shadow">
-            <thead className="bg-gray-100">
+          <table className="min-w-full bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <thead className="bg-gradient-to-r from-[#4F46E5] to-[#6B7AE8] text-white">
               <tr>
-                <th className="py-2 px-4">ID</th>
-                <th className="py-2 px-4">Title</th>
-                <th className="py-2 px-4">Date</th>
-                <th className="py-2 px-4">Status</th>
-                <th className="py-2 px-4">Actions</th>
+                <th className="py-3 px-6 text-left">ID</th>
+                <th className="py-3 px-6 text-left">Title</th>
+                <th className="py-3 px-6 text-left">Date</th>
+                <th className="py-3 px-6 text-left">Status</th>
+                <th className="py-3 px-6">Actions</th>
               </tr>
             </thead>
             <tbody>
               {reports.map((report) => (
-                <tr key={report.id} className="border-b">
-                  <td className="py-2 px-4">{report.id}</td>
-                  <td className="py-2 px-4">{report.title}</td>
-                  <td className="py-2 px-4">{report.date}</td>
-                  <td className="py-2 px-4">
+                <tr key={report.id} className="border-b hover:bg-gray-50 transition-all duration-200">
+                  <td className="py-3 px-6">{report.id}</td>
+                  <td className="py-3 px-6">{report.title}</td>
+                  <td className="py-3 px-6">{report.date}</td>
+                  <td className="py-3 px-6">
                     <span
-                      className={`px-3 py-1 rounded-lg text-sm ${
+                      className={`px-3 py-1 rounded-full text-sm font-semibold ${
                         report.status === "Completed"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-yellow-100 text-yellow-700"
+                          ? "bg-green-200 text-green-700"
+                          : "bg-yellow-200 text-yellow-800"
                       }`}
                     >
                       {report.status}
                     </span>
                   </td>
-                  <td className="py-2 px-4">
+                  <td className="py-3 px-6 text-center">
                     <button
-                      className="text-blue-500 hover:underline"
+                      className="text-blue-500 hover:underline font-medium"
                       onClick={() => setSelectedReport(report)}
                     >
                       View Details
@@ -72,16 +65,15 @@ const ReportsTable: React.FC = () => {
           </table>
         </div>
 
-        {/* Detalles dinámicos del reporte */}
         {selectedReport && (
-          <div className="w-1/3 bg-gray-50 p-4 shadow-lg">
-            <h3 className="text-xl font-bold mb-4">Report Details</h3>
-            <p><strong>ID:</strong> {selectedReport.id}</p>
-            <p><strong>Title:</strong> {selectedReport.title}</p>
-            <p><strong>Date:</strong> {selectedReport.date}</p>
-            <p><strong>Status:</strong> {selectedReport.status}</p>
+          <div className="w-1/3 bg-white p-6 shadow-lg rounded-lg border border-gray-200">
+            <h3 className="text-xl font-bold text-[#4F46E5] mb-4">Report Details</h3>
+            <p className="mb-2 text-gray-700"><strong>ID:</strong> {selectedReport.id}</p>
+            <p className="mb-2 text-gray-700"><strong>Title:</strong> {selectedReport.title}</p>
+            <p className="mb-2 text-gray-700"><strong>Date:</strong> {selectedReport.date}</p>
+            <p className="mb-4 text-gray-700"><strong>Status:</strong> {selectedReport.status}</p>
             <button
-              className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+              className="w-full py-2 bg-[#4F46E5] text-white rounded-lg hover:bg-[#6B7AE8] transition-colors duration-300"
               onClick={() => setSelectedReport(null)}
             >
               Close Details
