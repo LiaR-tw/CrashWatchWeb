@@ -1,8 +1,25 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import RequestAccident from "./requestAccident";
 
 const AccidentsView: React.FC = () => {
+  const [selectedAccident, setSelectedAccident] = useState<number | null>(null);
+
+  const handleReadMore = (index: number) => {
+    setSelectedAccident(index);
+  };
+
+  if (selectedAccident !== null) {
+    // Muestra la página de solicitud de accidente
+    return (
+      <RequestAccident
+        accidentId={selectedAccident}
+        onBack={() => setSelectedAccident(null)}
+      />
+    );
+  }
+
   return (
     <div>
       <div className="grid grid-cols-3 gap-4 mt-6">
@@ -31,7 +48,10 @@ const AccidentsView: React.FC = () => {
               Lorem ipsum dolor sit amet consectetur. Nibh ornare auctor eu
               ligula tellus...
             </p>
-            <button className="text-blue-500 text-sm font-semibold">
+            <button
+              onClick={() => handleReadMore(index)}
+              className="text-blue-500 text-sm font-semibold"
+            >
               Read more...
             </button>
           </div>

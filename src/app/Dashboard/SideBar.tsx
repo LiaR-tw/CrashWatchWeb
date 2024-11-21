@@ -31,6 +31,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onChangeView }) => {
       view: "reports",
       image: "/images/Icons/Reports.png",
     },
+    
   ];
 
   const handleItemClick = (view: string) => {
