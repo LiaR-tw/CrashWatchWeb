@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-export default function SignUp() {
+export default function Register() {
 
   const router = useRouter();
 
@@ -29,7 +29,7 @@ export default function SignUp() {
           </div>
 
           {/* Título y descripción */}
-          <h1 className="text-2xl font-bold text-blue-900 mt-4">Crash Watcher - Register</h1>
+          <h1 className="text-2xl font-bold text-blue-900 mt-4">Institutional Register</h1>
           <p className="text-blue-900 text-sm">Please fill in the details to register</p>
         </div>
 
@@ -38,10 +38,10 @@ export default function SignUp() {
           <div className="flex space-x-4">
             <div className="w-1/2">
               <label htmlFor="firstName" className="block text-blue-900 font-medium">
-                First Name
+              Institutional Name
               </label>
               <input
-                id="firstName"
+                id=" InstitutionalName"
                 type="text"
                 placeholder="Enter your first name"
                 className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -49,56 +49,16 @@ export default function SignUp() {
             </div>
             <div className="w-1/2">
               <label htmlFor="lastName" className="block text-blue-900 font-medium">
-                Last Name
+                Location
               </label>
               <input
-                id="lastName"
+                id="Location"
                 type="text"
                 placeholder="Enter your last name"
                 className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
-
-          {/* Email Input */}
-          <div>
-            <label htmlFor="email" className="block text-blue-900 font-medium">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              placeholder="Enter your email"
-              className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Password Inputs */}
-          <div className="flex space-x-4">
-            <div className="w-1/2">
-              <label htmlFor="password" className="block text-blue-900 font-medium">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="w-1/2">
-              <label htmlFor="confirmPassword" className="block text-blue-900 font-medium">
-                Confirm Password
-              </label>
-              <input
-                id="confirmPassword"
-                type="password"
-                placeholder="Confirm your password"
-                className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
           {/* Latitude and Longitude Inputs */}
           <div className="flex space-x-4">
             <div className="w-1/2">
@@ -128,16 +88,15 @@ export default function SignUp() {
           {/* Role Select */}
           <div>
             <label htmlFor="role" className="block text-blue-900 font-medium">
-              Role
+              Category
             </label>
             <select
               id="role"
               className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="admin">Administrator</option>
-              <option value="manager">Manager</option>
-              <option value="staff">Staff</option>
-              <option value="customer">Customer</option>
+              <option value="Salud">Salud</option>
+              <option value="Police">Police</option>
+              <option value="Bomberos">Bomberos</option>
             </select>
           </div>
 

@@ -3,46 +3,29 @@
 import React, { useState } from "react";
 import Sidebar from "./SideBar";
 import Header from "./Header";
-import StatsCard from "./Reports/StatsCard";
 import InstitutionsTable from "./Institutions/InstitutionsTable";
-import ReportsTable from "./Reports/page";
+import ReportsView from "./Reports/ReportsView"; // Usa ReportsView aquí
 import MapView from "./Map/page";
+import Register from "./Register/page";
+import ChangePassword from "./ChangePassword/page";
 
 const Dashboard: React.FC = () => {
-  // Estado para manejar la vista actual
-  const [currentView, setCurrentView] = useState<"institutions" | "reports" | "map">("institutions");
-
-  // Función para cambiar la vista
-  const handleViewChange = (view: "institutions" | "reports" | "map") => {
-    setCurrentView(view);
-  };
+  const [currentView, setCurrentView] = useState<"institutions" | "reports" | "map" | "Register" | "ChangePassword">("institutions");
 
   return (
-    <div className="flex bg-gray-50">
-      {/* Sidebar con opciones */}
-      <Sidebar onChangeView={handleViewChange} />
+    <div className="flex bg-gradient-to-br from-[#1e3a8a] to-[#000000] min-h-screen">
+      {/* Sidebar */}
+      <Sidebar onChangeView={setCurrentView} />
 
-      <main className="flex-1">
-        {/* Header */}
+      <main className="flex-1 ml-64 bg-[#1e3a8a]"> {/* ml-64 para dejar espacio para el Sidebar */}
         <Header />
-
-        {/* Contenido dinámico basado en la vista actual */}
         <div className="px-8 py-6">
-          {currentView === "institutions" && (
-            <InstitutionsTable />
-          )}
-          {currentView === "reports" && (
-            <>
-              <StatsCard />
-              <ReportsTable />
-            </>
-          )}
-          {currentView === "map" && (
-            <>
-              <StatsCard />
-              <MapView />
-            </>
-          )}
+          {/* Solo renderiza la vista seleccionada */}
+          {currentView === "institutions" && <InstitutionsTable />}
+          {currentView === "reports" && <ReportsView />}
+          {currentView === "map" && <MapView />}
+          {currentView === "Register" && <Register />}
+          {currentView === "ChangePassword" && <ChangePassword />}
         </div>
       </main>
     </div>
