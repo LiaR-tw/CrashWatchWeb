@@ -23,7 +23,7 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
     phone: "",
     username: "",
     password: "",
-    status: "Active",
+    status: "",
     latitude: "",
     longitude: "",
     idCounty: "",

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Register from "../Institutions/RegisterInstitution";
 import AccidentsView from "./page";
 
 type Institution = {

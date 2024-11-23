@@ -11,6 +11,8 @@ import MapView from "./Map/page";
 import UsersTable from "./Users/page";
 import Profile from "./Profile/page";
 
+const accessToken = 'DQEDACk4MlhnmOmdmSVkBNDeJZ6qPhCndg2EUV5ihtAlqHuAbdy5dIY7wfMhlkZZXQc9Z8nFXfWaT3zoZ2pTOsC8soZE8pYPcSOnBQ==';
+
 type ViewType =
   | "map"
   | "accidents"
@@ -26,7 +28,7 @@ const Dashboard: React.FC = () => {
 
   // Diccionario para componentes
   const viewComponents: Record<ViewType, React.ReactNode> = {
-    map: <MapView />,
+    map: <MapView accessToken={accessToken} />,
     accidents: <AccidentsView />,
     institutions: <InstitutionsTable />,
     reports: <ReportsView />,
