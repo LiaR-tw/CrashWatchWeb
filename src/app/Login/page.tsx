@@ -7,12 +7,39 @@ export default function Login() {
   const [currentView, setCurrentView] = useState<"login" | "changePassword">(
     "login"
   );
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const router = useRouter();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/Dashboard"); // Simula el inicio de sesión o agrega lógica real
+    setError(null);
+
+    try {
+      const response = await fetch("http://localhost:3005/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Redirigir al dashboard o manejar datos del usuario
+        console.log("Usuario autenticado:", data);
+        router.push("/Dashboard");
+      } else {
+        // Manejar errores (usuario no encontrado, contraseña incorrecta)
+        const errorData = await response.json();
+        setError(errorData.message || "Login failed");
+      }
+    } catch (err) {
+      console.error("Error en la solicitud:", err);
+      setError("Something went wrong. Please try again later.");
+    }
   };
 
   const handleChangePassword = () => {
@@ -36,6 +63,12 @@ export default function Login() {
               <p className="text-blue-900 text-sm">Please log in to your account</p>
             </div>
 
+            {error && (
+              <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
+                {error}
+              </div>
+            )}
+
             <form className="space-y-4" onSubmit={handleLogin}>
               <div>
                 <label htmlFor="email" className="block text-blue-900 font-medium">
@@ -44,6 +77,8 @@ export default function Login() {
                 <input
                   id="email"
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
@@ -56,6 +91,8 @@ export default function Login() {
                 <input
                   id="password"
                   type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import React, { useState } from "react";
-import UsersTable from "./page";
+import InstitutionsTable from "../Institutions/InstitutionsTable";
 
 function RegisterForm({ onRegister }: { onRegister: () => void }) {
   return (
@@ -74,9 +74,9 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
               id="inst"
               className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm transition-all"
             >
-              <option value="Hospital Viedma">Hospital Viedma</option>
-              <option value="Sar">Sar</option>
-              <option value="Policia">Policia</option>
+              <option value="Hospital Viedma">Hospital Vi</option>
+              <option value="Police">Policie</option>
+              <option value="Bomber">Bomber</option>
             </select>
           </div>
 
@@ -93,14 +93,14 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
 }
 
 export default function UserRegister() {
-  const [currentView, setCurrentView] = useState<"register" | "Users">("register");
+  const [currentView, setCurrentView] = useState<"register" | "institutions">("register");
 
   return (
     <div>
       {currentView === "register" ? (
-        <RegisterForm onRegister={() => setCurrentView("Users")} />
+        <RegisterForm onRegister={() => setCurrentView("institutions")} />
       ) : (
-        <UsersTable />
+        <UserRegister />
       )}
     </div>
   );

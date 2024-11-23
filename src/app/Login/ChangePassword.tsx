@@ -1,5 +1,3 @@
-"use client";
-
 import { useRouter } from "next/navigation";
 
 const ChangePassword: React.FC = () => {
@@ -7,7 +5,8 @@ const ChangePassword: React.FC = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/Login");
+    // After password change, redirect to the dashboard
+    router.push("/dashboard");
   };
 
   return (
