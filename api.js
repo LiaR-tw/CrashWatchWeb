@@ -1,23 +1,17 @@
-const express = require('express'); // Para crear el servidor
-const { Pool } = require('pg'); // Para conectarse a la base de datos
-const cors = require('cors'); // Para manejar CORS, permite peticiones desde otros servidores
-const bcrypt = require('bcrypt'); // Para encriptar contraseñas
+const express = require('express');
+const { Pool } = require('pg');
+const cors = require('cors');
+const bcrypt = require('bcrypt');
 
-// Middleware para parsear JSON
 
-require('dotenv').config(); // Para gestionar variables de entorno
+require('dotenv').config();
 
 const app = express();
-app.use(express.json());
-//app.use(express.json()); // Para manejar JSON en las peticiones
 
-// Middleware para manejar CORS
 app.use(cors());
 
-// Middleware para manejar JSON en las peticiones con límite de 10mb
 app.use(express.json({ limit: '10mb' }));
 
-// Middleware para manejar formularios URL-encoded con límite de 10mb
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 
@@ -29,7 +23,6 @@ const pool = new Pool({
   port: process.env.DB_PORT,
 });
 
-// Verifica la conexión a la base de datos
 pool.on('connect', () => {
   console.log('Connected to the database');
 }).on('error', (err) => {
@@ -47,6 +40,8 @@ app.get('/photos', async (req, res) => {
   }
 });
 
+//CRUD ROLES
+
 app.get('/roles', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM "Rol"');
@@ -58,7 +53,7 @@ app.get('/roles', async (req, res) => {
 });
 
 app.get('/roles/:id', async (req, res) => {
-  const  {id}  = req.params; // Obtener el id del parámetro de la URL
+  const  {id}  = req.params;
   try {
     const query = 'SELECT * FROM "Rol" WHERE id = $1';
     const result = await pool.query(query, [id]);
@@ -71,9 +66,7 @@ app.get('/roles/:id', async (req, res) => {
 
 
 app.post('/roles', async (req, res) => {
-  const {name} = req.body; // Extraer 'name' del cuerpo
-
-  // Validar que 'name' no sea nulo ni vacío
+  const {name} = req.body;
   if (!name || name.trim() === '') {
     return res.status(400).json({ message: 'El campo "name" no puede estar vacío' });
   }
@@ -92,9 +85,44 @@ app.post('/roles', async (req, res) => {
   }
 });
 
-app.get('/institutionType', async (req, res) => {
+
+app.delete('/roles/:id', async (req, res) => {
+    const  {id}  = req.params;
+  
+    try {
+      const query = 'DELETE FROM "Rol" WHERE id = $1 RETURNING *';
+      const result = await pool.query(query, [id]);
+  
+      if (result.rowCount === 0) {
+        return res.status(404).json({ message: 'Rol no encontrado' });
+      }
+  
+      res.status(200).json({
+        message: 'Rol eliminado exitosamente',
+        rol: result.rows[0],
+      });
+    } catch (error) {
+      console.error('Error al eliminar Rol:', error);
+      res.status(500).json({ message: 'Error en el servidor' });
+    }
+  });
+
+// CRUD INSTITUTIONTYPE
+
+app.get('/institutionTypes', async (req, res) => {
+    try {
+      const result = await pool.query('SELECT * FROM "InstitutionType" WHERE status = 1');
+      res.json(result.rows);
+    } catch (error) {
+      console.error('Error fetching InstitutionTypes:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+
+
+app.get('/institutionTypesAvailable', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM "InstitutionType"');
+    const result = await pool.query('SELECT name FROM "InstitutionType" WHERE status = 1');
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching InstitutionTypes:', error);
@@ -102,10 +130,9 @@ app.get('/institutionType', async (req, res) => {
   }
 });
 
-app.post('/institutionType', async (req, res) => {
-  const name = 'Fire Fighters'; // Extraer 'name' del cuerpo
+app.post('/institutionTypes', async (req, res) => {
+  const {name} = req.body;
 
-  // Validar que 'name' no sea nulo ni vacío
   if (!name || name.trim() === '') {
     return res.status(400).json({ message: 'El campo "name" no puede estar vacío' });
   }
@@ -125,28 +152,25 @@ app.post('/institutionType', async (req, res) => {
 });
 
 
-app.put('/institutionType/:id', async (req, res) => {
-  const { id } = req.params; // Obtener el ID desde los parámetros de la URL
-  const { status } = req.body; // Obtener el nuevo status desde el cuerpo de la solicitud
+app.put('/institutionTypes/:id', async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
 
-  // Validar que el status sea proporcionado
   if (status === undefined) {
     return res.status(400).json({ message: 'El campo "status" es requerido' });
   }
 
   try {
-    // Ejecutar la consulta SQL para actualizar el status
     const query = 'UPDATE "InstitutionType" SET status = $1 WHERE id = $2 RETURNING *';
     const result = await pool.query(query, [status, id]);
 
-    // Validar si se actualizó algún registro
     if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Rol no encontrado' });
     }
 
     res.status(200).json({
       message: 'Status actualizado exitosamente',
-      rol: result.rows[0], // Devolver el registro actualizado
+      rol: result.rows[0],
     });
   } catch (error) {
     console.error('Error al actualizar el status:', error);
@@ -155,38 +179,73 @@ app.put('/institutionType/:id', async (req, res) => {
 });
 
 
+//INSTITUTION CRUD
 
-
-app.delete('/roles/:id', async (req, res) => {
-  const  {id}  = req.params; // Obtener el id del parámetro de la URL
-
-  try {
-    // Ejecutar la consulta SQL para eliminar el registro
-    const query = 'DELETE FROM "Rol" WHERE id = $1 RETURNING *';
-    const result = await pool.query(query, [id]);
-
-    // Validar si se eliminó algún registro
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Rol no encontrado' });
+app.get('/institutions', async (req, res) => {
+    try {
+      const result = await pool.query('SELECT * FROM "Institution"');
+      res.json(result.rows);
+    } catch (error) {
+      console.error('Error fetching Institutions:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
     }
+  });
+  
+  app.get('/institutions/:id', async (req, res) => {
+    const  {id}  = req.params;
+    try {
+      const query = 'SELECT * FROM "Institution" WHERE id = $1';
+      const result = await pool.query(query, [id]);
+      res.json(result.rows);
+    } catch (error) {
+      console.error('Error fetching Institutions:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
 
-    res.status(200).json({
-      message: 'Rol eliminado exitosamente',
-      rol: result.rows[0], // Devolver el registro eliminado
-    });
-  } catch (error) {
-    console.error('Error al eliminar Rol:', error);
-    res.status(500).json({ message: 'Error en el servidor' });
-  }
-});
+  app.get('/institutionsAvailable', async (req, res) => {
+    try {
+      const result = await pool.query('SELECT id, name FROM "Institution" WHERE status = 1');
+      res.json(result.rows);
+    } catch (error) {
+      console.error('Error fetching Institutions:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
+
+  app.post('/institutions', async (req, res) => {
+    const { name, description, phone, address, latitude, longitude, status, idInstitutionType, idCounty } = req.body;
+  
+    if (!name || !description || !phone || !address || !latitude || !longitude || !idInstitutionType || !idCounty) {
+      return res.status(400).json({ message: 'Todos los campos son obligatorios' });
+    }
+  
+    try {
+      const query = `
+        INSERT INTO "Institution" (name, description, phone, address, latitude, longitude, status, "idInstitutionType", "idCounty")
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING id, name, description, phone, address, latitude, longitude, status, "registerDate", "lastUpdate", "idInstitutionType", "idCounty"`;
+  
+      const result = await pool.query(query, [name, description, phone, address, latitude, longitude, status, idInstitutionType, idCounty]);
+  
+      res.status(201).json({
+        message: 'Institución creada exitosamente',
+        institution: result.rows[0]
+      });
+    } catch (error) {
+      console.error('Error al crear la institución:', error);
+      res.status(500).json({ message: 'Error en el servidor' });
+    }
+  });
 
 
+//Login Implementation
 
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Verificar si el usuario con ese email existe
     const query = 'SELECT * FROM "User" WHERE email = $1';
     const result = await pool.query(query, [email]);
 
@@ -196,13 +255,11 @@ app.post('/login', async (req, res) => {
 
     const user = result.rows[0];
 
-    // Comparar la contraseña ingresada con la almacenada en la base de datos
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       return res.status(401).json({ message: 'Contraseña incorrecta' });
     }
 
-    // Si la contraseña coincide, devolver los datos del usuario (sin la contraseña)
     res.status(201).json({
       message: 'Login exitoso',
       user: {
@@ -220,10 +277,11 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Ruta para obtener todos los usuarios (sin incluir las contraseñas)
+
+//USERS CRUD
+
 app.get('/users', async (req, res) => {
   try {
-    // Obtener todos los usuarios sin devolver la contraseña
     const query = 'SELECT * FROM "User"';
     const result = await pool.query(query);
 
@@ -235,10 +293,193 @@ app.get('/users', async (req, res) => {
 });
 
 
-// Inicia el servidor en el puerto 3000
+app.post('/users', async (req, res) => {
+    const {name,
+    lastname,
+    email,
+    ci,
+    phone,
+    username,
+    password,
+    status,
+    latitude,
+    longitude,
+    idCounty,
+    idRol} = req.body;
+    const saltRounds = 10;
+  
+    // Validar que los campos requeridos no estén vacíos
+    if (!name || !lastname || !email || !ci || !phone || !username || !password || !status || !latitude || !longitude || !idCounty || !idRol) {
+      return res.status(400).json({ message: 'Todos los campos son obligatorios' });
+    }
+  
+    try {
+
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+      const query = `
+        INSERT INTO "User" (name, lastname, email, ci, phone, username, password, status, latitude, longitude, "idCounty", "idRol")
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        RETURNING id, name, lastname, email, latitude, longitude, ci, phone, username, password, status, "registerDate", "lastUpdate", "idCounty", "idRol"`;
+  
+      const result = await pool.query(query, [
+        name,
+        lastname, 
+        email, 
+        ci, 
+        phone, 
+        username, 
+        hashedPassword, 
+        status, 
+        latitude, 
+        longitude, 
+        idCounty, 
+        idRol
+      ]);
+  
+      res.status(201).json({
+        message: 'Usuario creado exitosamente',
+        user: result.rows[0]
+      });
+    } catch (error) {
+      console.error('Error al crear el usuario:', error);
+      res.status(500).json({ message: 'Error en el servidor' });
+    }
+  });
+
+
+  app.put('/users/:id', async (req, res) => {
+    const {id} = req.params;
+    const {password} = req.body;
+    const saltRounds = 10;
+  
+    try {
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+      const query = 'UPDATE "User" SET password = $1 WHERE id = $2 RETURNING *';
+      const result = await pool.query(query, [hashedPassword, id]);
+  
+      if (result.rowCount === 0) {
+        return res.status(404).json({ message: 'Password no encontrado' });
+      }
+  
+      res.status(200).json({
+        message: 'Password updated!',
+        password: result.rows[0],
+      });
+    } catch (error) {
+      console.error('Error al actualizar el status:', error);
+      res.status(500).json({ message: 'Error en el servidor' });
+    }
+  });
+
+
+
+
+//COUNTRY, STATE AND COUNTY CRUD
+
+    //COUNTRY 
+
+    app.get('/countries', async (req, res) => {
+        try {
+        const result = await pool.query('SELECT id, name, status FROM "Country"');
+        res.json(result.rows);
+        } catch (error) {
+        console.error('Error al obtener los países:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
+        }
+    });
+  
+  
+    app.post('/countries', async (req, res) => {
+        const { name } = req.body;
+        if (!name || name.trim() === '') {
+        return res.status(400).json({ message: 'El campo "name" no puede estar vacío' });
+        }
+    
+        try {
+        const query = 'INSERT INTO "Country"(name) VALUES ($1) RETURNING id, name, status';
+        const result = await pool.query(query, [name]);
+    
+        res.status(201).json({
+            message: 'País creado exitosamente',
+            country: result.rows[0]
+        });
+        } catch (error) {
+        console.error('Error al crear el país:', error);
+        res.status(500).json({ message: 'Error en el servidor' });
+        }
+    });
+
+    //STATE
+
+    app.get('/states', async (req, res) => {
+        try {
+        const result = await pool.query('SELECT id, name, status, "idCountry" FROM "State"');
+        res.json(result.rows);
+        } catch (error) {
+        console.error('Error al obtener los estados:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
+        }
+    });
+  
+    app.post('/states', async (req, res) => {
+        const { name, idCountry } = req.body;
+    
+        if (!name || name.trim() === '' || !idCountry) {
+        return res.status(400).json({ message: 'El nombre y el ID del país son obligatorios' });
+        }
+    
+        try {
+        const query = 'INSERT INTO "State"(name, "idCountry") VALUES ($1, $2) RETURNING id, name, status, "idCountry"';
+        const result = await pool.query(query, [name, idCountry]);
+    
+        res.status(201).json({
+            message: 'Estado creado exitosamente',
+            state: result.rows[0]
+        });
+        } catch (error) {
+        console.error('Error al crear el estado:', error);
+        res.status(500).json({ message: 'Error en el servidor' });
+        }
+    });
+
+    //COUNTY
+
+    app.get('/counties', async (req, res) => {
+        try {
+        const result = await pool.query('SELECT id, name, status, "idState" FROM "County"');
+        res.json(result.rows);
+        } catch (error) {
+        console.error('Error al obtener los condados:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
+        }
+    });
+
+    app.post('/counties', async (req, res) => {
+        const { name, idState } = req.body;
+    
+        if (!name || name.trim() === '' || !idState) {
+        return res.status(400).json({ message: 'El nombre y el ID del estado son obligatorios' });
+        }
+    
+        try {
+        const query = 'INSERT INTO "County"(name, "idState") VALUES ($1, $2) RETURNING id, name, status, "idState"';
+        const result = await pool.query(query, [name, idState]);
+    
+        res.status(201).json({
+            message: 'Condado creado exitosamente',
+            county: result.rows[0]
+        });
+        } catch (error) {
+        console.error('Error al crear el condado:', error);
+        res.status(500).json({ message: 'Error en el servidor' });
+        }
+    });
+
+
+
+//Set the API on the port 3005
 app.listen(3005, () => {
     console.log('Server is running on port 3005');
   });
 
-// Exportar el pool para que lo uses en otros archivos si lo necesitas
 module.exports = pool;

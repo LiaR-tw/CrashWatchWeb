@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import UserRegister from "./UserRegister";
 
 type User = {
@@ -12,20 +12,57 @@ type User = {
   status: "Active" | "Inactive";
 };
 
-const Users: User[] = [
-  { name: "Univalle", type: "Hospital", phone: "+591 95566117", email: "univalle231@gmail.com", city: "Cochabamba", status: "Active" },
-  { name: "Viedma", type: "Hospital", phone: "+591 95566117", email: "viedma885@yahoo.com", city: "Cochabamba", status: "Inactive" },
-  { name: "Transit", type: "Police", phone: "+591 8723952", email: "ronald@adobe.com", city: "Cochabamba", status: "Inactive" },
-  { name: "Comand", type: "Police", phone: "+591 7832159", email: "marvin@tesla.com", city: "Cochabamba", status: "Active" },
-  { name: "Sar", type: "Firefighters", phone: "+10 97881541", email: "jerome@google.com", city: "Santa Cruz", status: "Active" },
-];
-
 const UsersTable: React.FC = () => {
   const [currentView, setCurrentView] = useState<string>("table");
   const [filter, setFilter] = useState<string>("All"); // Estado para el filtro
+  const [institutionTypes, setInstitutionTypes] = useState<string[]>([]); // Estado para los tipos de institución
+  const [users, setUsers] = useState<User[]>([]); // Estado para los usuarios obtenidos desde la API
+
+  // Obtener usuarios desde la API
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch("http://localhost:3005/users"); // Cambia la URL si es necesario
+        if (!response.ok) {
+          throw new Error("Failed to fetch users.");
+        }
+        const data = await response.json();
+        setUsers(data); // Asignamos los usuarios obtenidos al estado
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+  
+    fetchUsers();
+  }, []);
+  const handleRegister = () => {};
 
   // Filtrar los usuarios según el valor seleccionado
-  const filteredUsers = filter === "All" ? Users : Users.filter((user) => user.name === filter);
+  const filteredUsers = filter === "All" ? users : users.filter((user) => user.type === filter);
+
+  // Obtener los tipos de institución desde la API
+  useEffect(() => {
+    const fetchInstitutionTypes = async () => {
+      try {
+        const response = await fetch("http://localhost:3005/institutionsAvailable");
+        if (!response.ok) {
+          throw new Error("Failed to fetch institution types.");
+        }
+        const data = await response.json();
+        
+        if (Array.isArray(data)) {
+          const institutionNames = data.map((institution: { name: string }) => institution.name);
+          setInstitutionTypes(institutionNames);
+        } else {
+          console.error("Datos inesperados:", data);
+        }
+      } catch (error) {
+        console.error("Error fetching institution types:", error);
+      }
+    };
+  
+    fetchInstitutionTypes();
+  }, []);
 
   const renderContent = () => {
     if (currentView === "table") {
@@ -44,11 +81,11 @@ const UsersTable: React.FC = () => {
               className="border rounded-lg px-4 py-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="All">All</option>
-              <option value="Viedma">Hospital Viedma</option>
-              <option value="Univalle">Hospital Univalle</option>
-              <option value="Transit">Transit</option>
-              <option value="Sar">Sar</option>
-              <option value="Comand">Comand Police</option>
+              {institutionTypes.map((type, index) => (
+                <option key={index} value={type}>
+                  {type}
+                </option>
+              ))}
             </select>
           </div>
           <table className="min-w-full bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
@@ -94,7 +131,7 @@ const UsersTable: React.FC = () => {
         </div>
       );
     } else if (currentView === "register") {
-      return <UserRegister />;
+      return <UserRegister onRegister={handleRegister}/>;
     }
   };
 

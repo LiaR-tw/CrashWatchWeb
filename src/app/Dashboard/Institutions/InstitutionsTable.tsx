@@ -5,29 +5,52 @@ import Register from "./RegisterInstitution";
 
 type Institution = {
   name: string;
-  type: string;
-  phone: string;
+  type: number;
+  phone: number;
   email: string;
-  city: string;
-  status: "Active" | "Inactive";
+  city: number;
+  status: number;
 };
 
 const InstitutionsTable: React.FC = () => {
   const [currentView, setCurrentView] = useState<string>("table");
   const [filterType, setFilterType] = useState<string>("");
-  const [categories, setCategories] = useState<string[]>([]);
-  const [institutions, setInstitutions] = useState<Institution[]>([]); // Manejo dinámico de instituciones
+  const [categories, setCategories] = useState<string[]>([]); // Guardará los tipos de institución
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Llamada al API para obtener los tipos de institución
   useEffect(() => {
+    const fetchInstitutionTypes = async () => {
+      try {
+        const response = await fetch("http://localhost:3005/institutionTypesAvailable");
+        if (!response.ok) throw new Error("Failed to fetch institution types.");
+        const data = await response.json();
+        console.log(data); // Verifica la estructura de los datos
+        // Si es un array de objetos, extrae los nombres de los tipos
+        if (Array.isArray(data)) {
+          const categoryNames = data.map((category: { name: string }) => category.name);
+          setCategories(categoryNames); // Asegúrate de que categories sea un array de strings
+        } else {
+          console.error("Datos inesperados:", data);
+        }
+      } catch (err) {
+        console.error("Error fetching institution types:", err);
+        setError("Error fetching institution types.");
+      }
+    };
+  
+    fetchInstitutionTypes();
+
+    // Llamar a las funciones para obtener instituciones y tipos de institución
     const fetchInstitutions = async () => {
       setIsLoading(true);
       try {
         const response = await fetch("http://localhost:3005/institutions");
         if (!response.ok) throw new Error("Failed to fetch institutions.");
         const data = await response.json();
-        setInstitutions(Array.isArray(data) ? data : []); // Asegura que sea un array
+        setInstitutions(Array.isArray(data) ? data : []);
         setError(null);
       } catch (err) {
         console.error(err);
@@ -37,23 +60,12 @@ const InstitutionsTable: React.FC = () => {
       }
     };
 
-    const fetchCategories = async () => {
-      try {
-        const response = await fetch("http://localhost:3005/categories");
-        if (!response.ok) throw new Error("Failed to fetch categories.");
-        const data = await response.json();
-        setCategories(data.map((category: any) => category.name)); // Ajusta "name" según tu API
-      } catch (err) {
-        console.error("Error fetching categories:", err);
-      }
-    };
-
+    fetchInstitutionTypes();
     fetchInstitutions();
-    fetchCategories();
   }, []);
 
   const filteredInstitutions = institutions.filter((institution) =>
-    filterType ? institution.type === filterType : true
+    filterType ? institution.name === filterType : true
   );
 
   const renderContent = () => {
@@ -110,7 +122,7 @@ const InstitutionsTable: React.FC = () => {
                   <td className="py-3 px-6">
                     <span
                       className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                        institution.status === "Active"
+                        institution.status === 1
                           ? "bg-green-200 text-green-700"
                           : "bg-red-200 text-red-700"
                       }`}
