@@ -34,7 +34,7 @@ export default function Home() {
 
   // Mostrar estado de carga mientras verifica autenticación
   if (isAuthenticated === null) {
-    return <div>Loading...</div>;
+    return <div></div>;
   }
 
   // Este componente nunca debería renderizar nada, ya que siempre redirige

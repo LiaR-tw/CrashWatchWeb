@@ -10,7 +10,7 @@ import AccidentsView from "./Accidents/page";
 import MapView from "./Map/page";
 import UsersTable from "./Users/page";
 import Profile from "./Profile/page";
-import { useRouter } from "next/navigation"; // Importar useRouter para redirección
+import { useRouter } from "next/navigation";
 
 type ViewType =
   | "map"
@@ -23,10 +23,10 @@ type ViewType =
   | "Profile";
 
 const Dashboard: React.FC = () => {
-  const [currentView, setCurrentView] = useState<ViewType>("map");
+  const [currentView, setCurrentView] = useState<ViewType>("institutions"); // Default view set to institutions
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter(); // Hook para redirigir
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null); // Para verificar la autenticación
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchProtectedData = async () => {
@@ -56,36 +56,45 @@ const Dashboard: React.FC = () => {
     };
 
     fetchProtectedData();
-  }, [router]); // Solo se ejecuta al montar el componente
+  }, [router]);
 
-  // Si aún no se ha verificado la autenticación, mostrar un estado de carga
   if (isAuthenticated === null) {
     return <div>Loading...</div>;
   }
 
   // Diccionario para componentes
   const viewComponents: Record<ViewType, React.ReactNode> = {
-    map: <MapView />,
+    map:null,
     accidents: <AccidentsView />,
     institutions: <InstitutionsTable />,
     reports: <ReportsView />,
     Register: <Register />,
-    ChangePassword: <div>Change Password Component Placeholder</div>, // Agrega el componente cuando esté listo
+    ChangePassword: <div>Change Password Component Placeholder</div>,
     Users: <UsersTable />,
     Profile: <Profile />,
+  };
+
+  // Función para cambiar la vista
+  const changeView = (view: ViewType) => {
+    setCurrentView(view);
   };
 
   return (
     <div className="flex min-h-screen bg-cover bg-fixed">
       {/* Sidebar */}
-      <Sidebar onChangeView={setCurrentView} />
+      <Sidebar onChangeView={changeView} />
 
       {/* Main Content */}
       <main className="flex-1 ml-64 bg-white p-6 rounded-tl-3xl rounded-bl-3xl shadow-lg">
         <Header />
         <div className="px-8 py-6 bg-white rounded-lg shadow-md">
-          {/* Render dinámico basado en la vista actual */}
-          {viewComponents[currentView] || <div>Vista no encontrada</div>}
+          {/* Map is always rendered */}
+          <div style={{ display: currentView === "map" ? "block" : "none" }}>
+            <MapView /> {/* El mapa solo será visible si currentView es "map" */}
+          </div>
+
+          {/* Renderizamos las vistas que no son el mapa */}
+          {currentView !== "map" && viewComponents[currentView]}
         </div>
       </main>
     </div>

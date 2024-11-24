@@ -56,12 +56,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onChangeView }) => {
     try {
       const response = await fetch("http://localhost:3005/logout", {
         method: "POST",
-        credentials: "include", // Asegura que las cookies sean enviadas
+        credentials: "include",
       });
 
       if (response.ok) {
         console.log("Sesión cerrada correctamente");
-        window.location.replace("/Login"); // Redirige al inicio de sesión
+        window.location.replace("/Login");
       } else {
         console.error("Error al cerrar sesión:", await response.text());
         alert("Hubo un problema al cerrar la sesión. Intenta nuevamente.");
