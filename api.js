@@ -1,14 +1,29 @@
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
+const authenticateToken = require("./middleware/authenticateToken");
+const userRoutes = require("./routes/userRoutes");
 
 
 require('dotenv').config();
 
+const jwt = require("jsonwebtoken");
+
 const app = express();
 
-app.use(cors());
+app.use(cookieParser());
+
+const corsOptions = {
+  origin: 'http://localhost:3000', // Especifica el origen exacto
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true, // Permite el envío de cookies y credenciales
+};
+
+app.use(cors(corsOptions));
+
 
 app.use(express.json({ limit: '10mb' }));
 
@@ -29,7 +44,12 @@ pool.on('connect', () => {
   console.error('Database connection error:', err);
 });
 
+//ROUTES
 
+app.use("/user", userRoutes);
+
+
+//PHOTOS CRUD
 app.get('/photos', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM "Photo"');
@@ -183,7 +203,9 @@ app.put('/institutionTypes/:id', async (req, res) => {
 
 app.get('/institutions', async (req, res) => {
     try {
-      const result = await pool.query('SELECT * FROM "Institution"');
+      const result = await pool.query(`SELECT name, description, phone, address, latitude, longitude, status, 
+                                     (SELECT name FROM "InstitutionType" WHERE "InstitutionType".id = "Institution"."idInstitutionType") AS type,
+                                     (SELECT name FROM "County" WHERE "County".id = "Institution"."idCounty")AS county FROM "Institution"`);
       res.json(result.rows);
     } catch (error) {
       console.error('Error fetching Institutions:', error);
@@ -254,23 +276,28 @@ app.post('/login', async (req, res) => {
     }
 
     const user = result.rows[0];
-
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       return res.status(401).json({ message: 'Contraseña incorrecta' });
     }
 
-    res.status(201).json({
-      message: 'Login exitoso',
-      user: {
-        id: user.id,
-        name: user.name,
-        lastname: user.lastname,
-        email: user.email,
-        date_registration: user.date_registration,
-        status: user.status,
-      },
+    // Crear el token JWT
+    const jwtSecret = process.env.JWT_SECRET; // Usa un valor seguro almacenado en .env
+    const token = jwt.sign(
+      { id: user.id, email: user.email }, // Payload
+      jwtSecret,
+      { expiresIn: "7d" } // Expiración
+    );
+
+    // Configurar la cookie
+    res.cookie("authToken", token, {
+      httpOnly: true, // Evita acceso desde JavaScript
+      secure: process.env.NODE_ENV === "production", // Solo en HTTPS en producción
+      sameSite: "strict", // Prevenir CSRF
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
     });
+
+    res.status(200).json({ message: 'Login exitoso' });
   } catch (error) {
     console.error('Error al autenticar usuario:', error);
     res.status(500).json({ message: 'Error en el servidor' });
@@ -278,11 +305,23 @@ app.post('/login', async (req, res) => {
 });
 
 
+app.post('/logout', (req, res) => {
+  res.clearCookie("authToken");
+  res.status(200).json({ message: "Sesión cerrada" });
+});
+
+//ROUTES
+
+app.get("/dashboard", authenticateToken, (req, res) => {
+  res.json({ message: `Bienvenido, usuario ${req.user.email}` });
+});
+
 //USERS CRUD
 
 app.get('/users', async (req, res) => {
   try {
-    const query = 'SELECT * FROM "User"';
+    const query = `SELECT name AS name, lastname, email, ci, phone, username,(SELECT name FROM "Rol" WHERE "Rol".id = "User"."idRol" ) AS rol,status
+                   FROM "User"`;
     const result = await pool.query(query);
 
     res.status(200).json(result.rows);
@@ -474,6 +513,21 @@ app.post('/users', async (req, res) => {
         res.status(500).json({ message: 'Error en el servidor' });
         }
     });
+
+//ACCIDENTS AND REPORTS CRUD
+
+app.get('/accidents', async (req, res) => {
+  try {
+  const result = await pool.query(`SELECT id, name, status, "idState" FROM "County"`);
+  res.json(result.rows);
+  } catch (error) {
+  console.error('Error al obtener los condados:', error);
+  res.status(500).json({ error: 'Error en el servidor' });
+  }
+});
+
+
+
 
 
 

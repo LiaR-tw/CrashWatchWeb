@@ -4,18 +4,20 @@ import React, { useEffect, useState } from "react";
 import Register from "./RegisterInstitution";
 
 type Institution = {
-  name: string;
-  type: number;
-  phone: number;
-  email: string;
-  city: number;
-  status: number;
+  name:string ;
+  phone:number ;
+  address:string ;
+  latitude:number ;
+  longitude: number;
+  status:number ;
+  type:string;
+  county:string;
 };
 
 const InstitutionsTable: React.FC = () => {
   const [currentView, setCurrentView] = useState<string>("table");
   const [filterType, setFilterType] = useState<string>("");
-  const [categories, setCategories] = useState<string[]>([]); // Guardará los tipos de institución
+  const [types, setTypes] = useState<string[]>([]); // Guardará los tipos de institución
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,8 +32,8 @@ const InstitutionsTable: React.FC = () => {
         console.log(data); // Verifica la estructura de los datos
         // Si es un array de objetos, extrae los nombres de los tipos
         if (Array.isArray(data)) {
-          const categoryNames = data.map((category: { name: string }) => category.name);
-          setCategories(categoryNames); // Asegúrate de que categories sea un array de strings
+          const typeNames = data.map((type: { name: string }) => type.name);
+          setTypes(typeNames); // Asegúrate de que categories sea un array de strings
         } else {
           console.error("Datos inesperados:", data);
         }
@@ -65,7 +67,7 @@ const InstitutionsTable: React.FC = () => {
   }, []);
 
   const filteredInstitutions = institutions.filter((institution) =>
-    filterType ? institution.name === filterType : true
+    filterType ? institution.type === filterType : true
   );
 
   const renderContent = () => {
@@ -93,9 +95,9 @@ const InstitutionsTable: React.FC = () => {
               value={filterType}
             >
               <option value="">All</option>
-              {categories.map((category, index) => (
-                <option key={index} value={category}>
-                  {category}
+              {types.map((type, index) => (
+                <option key={index} value={type}>
+                  {type}
                 </option>
               ))}
             </select>
@@ -106,7 +108,7 @@ const InstitutionsTable: React.FC = () => {
                 <th className="py-3 px-6 text-left">Name</th>
                 <th className="py-3 px-6 text-left">Type</th>
                 <th className="py-3 px-6 text-left">Phone</th>
-                <th className="py-3 px-6 text-left">Email</th>
+                <th className="py-3 px-6 text-left">Address</th>
                 <th className="py-3 px-6 text-left">City</th>
                 <th className="py-3 px-6 text-left">Status</th>
               </tr>
@@ -117,8 +119,8 @@ const InstitutionsTable: React.FC = () => {
                   <td className="py-3 px-6">{institution.name}</td>
                   <td className="py-3 px-6">{institution.type}</td>
                   <td className="py-3 px-6">{institution.phone}</td>
-                  <td className="py-3 px-6">{institution.email}</td>
-                  <td className="py-3 px-6">{institution.city}</td>
+                  <td className="py-3 px-6">{institution.address}</td>
+                  <td className="py-3 px-6">{institution.county}</td>
                   <td className="py-3 px-6">
                     <span
                       className={`px-3 py-1 rounded-full text-sm font-semibold ${

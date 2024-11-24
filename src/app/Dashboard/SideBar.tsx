@@ -36,11 +36,40 @@ const Sidebar: React.FC<SidebarProps> = ({ onChangeView }) => {
       view: "Users",
       image: "/images/Icons/Users.png",
     },
+    {
+      label: "SignOut",
+      view: undefined, // No necesita view específico
+      image: "/images/Icons/SignOut.png",
+    },
   ];
 
-  const handleItemClick = (view: string) => {
-    setSelectedView(view);
-    onChangeView(view as any);
+  const handleItemClick = (view?: string) => {
+    if (view === undefined) {
+      handleSignOut();
+    } else {
+      setSelectedView(view);
+      onChangeView(view as any);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      const response = await fetch("http://localhost:3005/logout", {
+        method: "POST",
+        credentials: "include", // Asegura que las cookies sean enviadas
+      });
+
+      if (response.ok) {
+        console.log("Sesión cerrada correctamente");
+        window.location.replace("/Login"); // Redirige al inicio de sesión
+      } else {
+        console.error("Error al cerrar sesión:", await response.text());
+        alert("Hubo un problema al cerrar la sesión. Intenta nuevamente.");
+      }
+    } catch (error) {
+      console.error("Error en la solicitud de cierre de sesión:", error);
+      alert("No se pudo conectar con el servidor. Revisa tu conexión.");
+    }
   };
 
   return (
@@ -59,14 +88,14 @@ const Sidebar: React.FC<SidebarProps> = ({ onChangeView }) => {
             alt="User Avatar"
             className="w-8 h-8 rounded-full"
           />
-          <span>Ver Perfil</span>
+          <span>View Profile</span>
         </button>
       </div>
 
       <ul className="flex-1">
         {menuItems.map((item) => (
           <li
-            key={item.view}
+            key={item.label}
             className={`p-4 flex items-center space-x-4 cursor-pointer rounded-lg ${
               selectedView === item.view
                 ? "bg-[#5932EA] text-white"

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "./SideBar";
 import Header from "./Header";
 import InstitutionsTable from "./Institutions/InstitutionsTable";
@@ -10,8 +10,7 @@ import AccidentsView from "./Accidents/page";
 import MapView from "./Map/page";
 import UsersTable from "./Users/page";
 import Profile from "./Profile/page";
-
-const accessToken = 'DQEDACk4MlhnmOmdmSVkBNDeJZ6qPhCndg2EUV5ihtAlqHuAbdy5dIY7wfMhlkZZXQc9Z8nFXfWaT3zoZ2pTOsC8soZE8pYPcSOnBQ==';
+import { useRouter } from "next/navigation"; // Importar useRouter para redirección
 
 type ViewType =
   | "map"
@@ -25,10 +24,48 @@ type ViewType =
 
 const Dashboard: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>("map");
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter(); // Hook para redirigir
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null); // Para verificar la autenticación
+
+  useEffect(() => {
+    const fetchProtectedData = async () => {
+      try {
+        const response = await fetch("http://localhost:3005/user/dashboard", {
+          method: "GET",
+          credentials: "include", // Enviar cookies
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Datos protegidos:", data);
+          setIsAuthenticated(true); // Usuario autenticado
+        } else if (response.status === 401 || response.status === 403) {
+          setIsAuthenticated(false); // Usuario no autenticado
+          setError("No autorizado o token inválido");
+          router.push("/Login"); // Redirigir al login
+        } else {
+          setError("Error desconocido");
+        }
+      } catch (err) {
+        console.error("Error al obtener datos protegidos:", err);
+        setError("Error de conexión al servidor");
+        setIsAuthenticated(false); // Usuario no autenticado
+        router.push("/Login"); // Redirigir al login
+      }
+    };
+
+    fetchProtectedData();
+  }, [router]); // Solo se ejecuta al montar el componente
+
+  // Si aún no se ha verificado la autenticación, mostrar un estado de carga
+  if (isAuthenticated === null) {
+    return <div>Loading...</div>;
+  }
 
   // Diccionario para componentes
   const viewComponents: Record<ViewType, React.ReactNode> = {
-    map: <MapView accessToken={accessToken} />,
+    map: <MapView />,
     accidents: <AccidentsView />,
     institutions: <InstitutionsTable />,
     reports: <ReportsView />,

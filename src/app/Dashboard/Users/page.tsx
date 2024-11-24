@@ -5,11 +5,13 @@ import UserRegister from "./UserRegister";
 
 type User = {
   name: string;
-  type: string;
-  phone: string;
+  lastname: string;
   email: string;
-  city: string;
-  status: "Active" | "Inactive";
+  ci: string;
+  phone: string;
+  username: string;
+  rol: string;
+  status:string;
 };
 
 const UsersTable: React.FC = () => {
@@ -27,7 +29,18 @@ const UsersTable: React.FC = () => {
           throw new Error("Failed to fetch users.");
         }
         const data = await response.json();
-        setUsers(data); // Asignamos los usuarios obtenidos al estado
+        setUsers(
+          data.map((user: any) => ({
+            name: user.name,
+            lastname: user.lastname,
+            email: user.email,
+            ci: user.ci,
+            phone: user.phone,
+            username: user.username,
+            rol: user.rol, // Ajusta aquí si el campo no es directamente `rol`
+            status: user.status,
+          }))
+        ); // Asignamos los usuarios obtenidos al estado
       } catch (error) {
         console.error("Error fetching users:", error);
       }
@@ -38,7 +51,7 @@ const UsersTable: React.FC = () => {
   const handleRegister = () => {};
 
   // Filtrar los usuarios según el valor seleccionado
-  const filteredUsers = filter === "All" ? users : users.filter((user) => user.type === filter);
+  const filteredUsers = filter === "All" ? users : users.filter((user) => user.rol === filter);
 
   // Obtener los tipos de institución desde la API
   useEffect(() => {
@@ -92,21 +105,23 @@ const UsersTable: React.FC = () => {
             <thead className="bg-gradient-to-r from-[#4F46E5] to-[#6B7AE8] text-white">
               <tr>
                 <th className="py-3 px-6 text-left">Name</th>
-                <th className="py-3 px-6 text-left">Type</th>
-                <th className="py-3 px-6 text-left">Phone</th>
                 <th className="py-3 px-6 text-left">Email</th>
-                <th className="py-3 px-6 text-left">City</th>
+                <th className="py-3 px-6 text-left">Ci</th>
+                <th className="py-3 px-6 text-left">Phone</th>
+                <th className="py-3 px-6 text-left">Username</th>
+                <th className="py-3 px-6 text-left">Rol</th>
                 <th className="py-3 px-6 text-left">Status</th>
               </tr>
             </thead>
             <tbody>
               {filteredUsers.map((user, index) => (
                 <tr key={index} className="border-b hover:bg-gray-50 transition-all duration-200">
-                  <td className="py-3 px-6">{user.name}</td>
-                  <td className="py-3 px-6">{user.type}</td>
-                  <td className="py-3 px-6">{user.phone}</td>
+                  <td className="py-3 px-6">{user.name} {user.lastname}</td>
                   <td className="py-3 px-6">{user.email}</td>
-                  <td className="py-3 px-6">{user.city}</td>
+                  <td className="py-3 px-6">{user.ci}</td>
+                  <td className="py-3 px-6">{user.phone}</td>
+                  <td className="py-3 px-6">{user.username}</td>
+                  <td className="py-3 px-6">{user.rol}</td>
                   <td className="py-3 px-6">
                     <span
                       className={`px-3 py-1 rounded-full text-sm font-semibold ${
