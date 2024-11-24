@@ -1,17 +1,21 @@
-import React, { useEffect, useRef, useState } from 'react';
+"use client";
 
-const accessToken = 'DQEDACk4MlhnmOmdmSVkBNDeJZ6qPhCndg2EUV5ihtAlqHuAbdy5dIY7wfMhlkZZXQc9Z8nFXfWaT3zoZ2pTOsC8soZE8pYPcSOnBQ==';
+import React, { useEffect, useRef, useState } from "react";
+
+const accessToken =
+  "DQEDACk4MlhnmOmdmSVkBNDeJZ6qPhCndg2EUV5ihtAlqHuAbdy5dIY7wfMhlkZZXQc9Z8nFXfWaT3zoZ2pTOsC8soZE8pYPcSOnBQ==";
 
 const MapView: React.FC = () => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null); // Referencia para la instancia del mapa
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [reLoad, setReload] = useState(true);
 
   const initMap = () => {
     // Verificar si ya hay una instancia del mapa
     if (mapInstanceRef.current) {
-      console.log('El mapa ya está inicializado, evitando reinicialización.');
+      console.log("El mapa ya está inicializado, evitando reinicialización.");
       return;
     }
 
@@ -19,38 +23,44 @@ const MapView: React.FC = () => {
       const mapOptions = {
         center: { lat: 48.856613, lng: 2.352222 }, // París
         zoom: 8,
-        language: 'ENG',
-        sourceType: 'raster',
+        language: "ENG",
+        sourceType: "raster",
         authOptions: { accessToken },
       };
 
       try {
         // Crear y guardar una nueva instancia del mapa
-        mapInstanceRef.current = new window.HWMapJsSDK.HWMap(mapContainerRef.current, mapOptions);
-        console.log('Mapa inicializado correctamente.');
+        mapInstanceRef.current = new window.HWMapJsSDK.HWMap(
+          mapContainerRef.current,
+          mapOptions
+        );
+        console.log("Mapa inicializado correctamente.");
+        setReload(false);
       } catch (error) {
-        console.error('Error al inicializar el mapa:', error);
-        setLoadError('Error al inicializar el mapa.');
+        console.error("Error al inicializar el mapa:", error);
+        setLoadError("Error al inicializar el mapa.");
       }
     } else {
-      setLoadError('SDK no está disponible.');
+      setLoadError("SDK no está disponible.");
+      setReload(true);
     }
   };
 
+  // UseEffect para cargar el script y verificar si el mapa debe inicializarse
   useEffect(() => {
     const scriptSrc = `https://mapapi.cloud.huawei.com/mapjs/v1/api/js?key=${accessToken}&callback=initMap`;
 
     // Verificar si el script ya está cargado
     const existingScript = document.querySelector(`script[src="${scriptSrc}"]`);
     if (existingScript) {
-      console.log('El SDK ya está cargado, verificando el mapa...');
+      console.log("El SDK ya está cargado, verificando el mapa...");
       setIsLoaded(true);
       initMap(); // Llama a `initMap` solo si no se ha inicializado antes
       return;
     }
 
     // Cargar el script si no está presente
-    const script = document.createElement('script');
+    const script = document.createElement("script");
     script.src = scriptSrc;
     script.async = true;
 
@@ -59,10 +69,10 @@ const MapView: React.FC = () => {
       initMap();
     };
 
-    script.onload = () => console.log('Script cargado correctamente.');
+    script.onload = () => console.log("Script cargado correctamente.");
     script.onerror = () => {
-      console.error('Error al cargar el SDK de Huawei Maps');
-      setLoadError('Error al cargar el SDK de Huawei Maps.');
+      console.error("Error al cargar el SDK de Huawei Maps");
+      setLoadError("Error al cargar el SDK de Huawei Maps.");
     };
 
     document.head.appendChild(script);
@@ -73,23 +83,30 @@ const MapView: React.FC = () => {
 
       // Limpieza de la referencia del mapa
       if (mapInstanceRef.current) {
-        console.log('Eliminando instancia del mapa en desmontaje.');
+        console.log("Eliminando instancia del mapa en desmontaje.");
         mapInstanceRef.current = null;
       }
     };
   }, [accessToken]);
 
+  // Efecto para verificar el estado de reLoad
+  useEffect(() => {
+    if (reLoad) {
+      initMap(); // Si reLoad es true, llamamos a initMap
+    }
+  }, [reLoad]); // Solo se ejecutará cuando reLoad cambie
+
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', height: '75vh', width: '100%' }}>
+    <div style={{ display: "flex", justifyContent: "center", height: "75vh", width: "100%" }}>
       {loadError ? (
-        <p style={{ color: 'red' }}>{loadError}</p>
+        <p style={{ color: "red" }}>{loadError}</p>
       ) : (
         <div
           ref={mapContainerRef}
           style={{
-            height: '100%',
-            width: '100%',
-            border: '1px solid #ccc',
+            height: "100%",
+            width: "100%",
+            border: "1px solid #ccc",
           }}
         >
           {!isLoaded && <p>Cargando mapa...</p>}
