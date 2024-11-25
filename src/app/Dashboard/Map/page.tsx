@@ -7,94 +7,77 @@ const accessToken =
 
 const MapView: React.FC = () => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapInstanceRef = useRef<any>(null); // Referencia para la instancia del mapa
+  const mapInstanceRef = useRef<any>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [reLoad, setReload] = useState(true);
 
   const initMap = () => {
-    // Verificar si ya hay una instancia del mapa
-    if (mapInstanceRef.current) {
-      console.log("El mapa ya está inicializado, evitando reinicialización.");
+    if (mapInstanceRef.current || !window.HWMapJsSDK || !mapContainerRef.current) {
+      console.log("El mapa ya está inicializado o el SDK no está disponible.");
       return;
     }
 
-    if (mapContainerRef.current && window.HWMapJsSDK) {
-      const mapOptions = {
-        center: { lat: 48.856613, lng: 2.352222 }, // París
-        zoom: 8,
-        language: "ENG",
-        sourceType: "raster",
-        authOptions: { accessToken },
-      };
+    const mapOptions = {
+      center: { lat: 48.856613, lng: 2.352222 },
+      zoom: 8,
+      language: "ENG",
+      sourceType: "raster",
+      authOptions: { accessToken },
+    };
 
-      try {
-        // Crear y guardar una nueva instancia del mapa
-        mapInstanceRef.current = new window.HWMapJsSDK.HWMap(
-          mapContainerRef.current,
-          mapOptions
-        );
-        console.log("Mapa inicializado correctamente.");
-        setReload(false);
-      } catch (error) {
-        console.error("Error al inicializar el mapa:", error);
-        setLoadError("Error al inicializar el mapa.");
-      }
-    } else {
-      setLoadError("SDK no está disponible.");
-      setReload(true);
+    try {
+      mapInstanceRef.current = new window.HWMapJsSDK.HWMap(
+        mapContainerRef.current,
+        mapOptions
+      );
+      console.log("Mapa inicializado correctamente.");
+    } catch (error) {
+      console.error("Error al inicializar el mapa:", error);
+      setLoadError("Error al inicializar el mapa.");
     }
   };
 
-  // UseEffect para cargar el script y verificar si el mapa debe inicializarse
   useEffect(() => {
     const scriptSrc = `https://mapapi.cloud.huawei.com/mapjs/v1/api/js?key=${accessToken}&callback=initMap`;
 
-    // Verificar si el script ya está cargado
-    const existingScript = document.querySelector(`script[src="${scriptSrc}"]`);
-    if (existingScript) {
-      console.log("El SDK ya está cargado, verificando el mapa...");
-      setIsLoaded(true);
-      initMap(); // Llama a `initMap` solo si no se ha inicializado antes
-      return;
-    }
+    const loadScript = () => {
+      const existingScript = document.querySelector(`script[src="${scriptSrc}"]`);
+      if (existingScript) {
+        console.log("El SDK ya está cargado, inicializando el mapa...");
+        (window as any).initMap = initMap; // Callback para el SDK
+        if (isLoaded) {
+          initMap();
+        }
+        return;
+      }
 
-    // Cargar el script si no está presente
-    const script = document.createElement("script");
-    script.src = scriptSrc;
-    script.async = true;
+      const script = document.createElement("script");
+      script.src = scriptSrc;
+      script.async = true;
 
-    (window as any).initMap = () => {
-      setIsLoaded(true);
-      initMap();
+      (window as any).initMap = () => {
+        setIsLoaded(true);
+        initMap();
+      };
+
+      script.onload = () => console.log("Script cargado correctamente.");
+      script.onerror = () => setLoadError("Error al cargar el SDK de Huawei Maps.");
+
+      document.head.appendChild(script);
     };
 
-    script.onload = () => console.log("Script cargado correctamente.");
-    script.onerror = () => {
-      console.error("Error al cargar el SDK de Huawei Maps");
-      setLoadError("Error al cargar el SDK de Huawei Maps.");
-    };
+    loadScript();
 
-    document.head.appendChild(script);
-
-    // Limpieza al desmontar
     return () => {
-      delete (window as any).initMap;
-
-      // Limpieza de la referencia del mapa
       if (mapInstanceRef.current) {
-        console.log("Eliminando instancia del mapa en desmontaje.");
+        console.log("Desmontando mapa y limpiando instancia.");
+        mapInstanceRef.current.destroy?.(); // Método destroy si está disponible
         mapInstanceRef.current = null;
       }
+
+      delete (window as any).initMap;
     };
   }, [accessToken]);
-
-  // Efecto para verificar el estado de reLoad
-  useEffect(() => {
-    if (reLoad) {
-      initMap(); // Si reLoad es true, llamamos a initMap
-    }
-  }, [reLoad]); // Solo se ejecutará cuando reLoad cambie
 
   return (
     <div style={{ display: "flex", justifyContent: "center", height: "75vh", width: "100%" }}>
@@ -109,7 +92,7 @@ const MapView: React.FC = () => {
             border: "1px solid #ccc",
           }}
         >
-          {!isLoaded && <p>Cargando mapa...</p>}
+          {!isLoaded && <p></p>}
         </div>
       )}
     </div>

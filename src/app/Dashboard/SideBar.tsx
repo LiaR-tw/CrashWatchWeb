@@ -9,6 +9,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ onChangeView }) => {
   const [selectedView, setSelectedView] = useState<string>("map");
+  const [showModal, setShowModal] = useState<boolean>(false); // Estado para mostrar el modal
 
   const menuItems = [
     {
@@ -45,7 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onChangeView }) => {
 
   const handleItemClick = (view?: string) => {
     if (view === undefined) {
-      handleSignOut();
+      setShowModal(true); // Mostrar el modal cuando se haga clic en "SignOut"
     } else {
       setSelectedView(view);
       onChangeView(view as any);
@@ -112,6 +113,33 @@ const Sidebar: React.FC<SidebarProps> = ({ onChangeView }) => {
           </li>
         ))}
       </ul>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl font-bold mb-4">
+              Do you really want to log out?
+            </h2>
+            <div className="flex justify-between">
+              <button
+                onClick={() => {
+                  setShowModal(false);
+                  handleSignOut(); // Cerrar sesión si confirma
+                }}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
+              >
+                Yes
+              </button>
+              <button
+                onClick={() => setShowModal(false)} // Cerrar modal si cancela
+                className="bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded"
+              >
+                No
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
