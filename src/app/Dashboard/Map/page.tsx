@@ -66,7 +66,7 @@ const MapView: React.FC = () => {
       console.log("El mapa ya está inicializado o el SDK no está disponible.");
       return;
     }
-
+  
     const mapOptions = {
       center: { lat: -17.38333333, lng: -66.16666667 },
       zoom: 8,
@@ -74,7 +74,7 @@ const MapView: React.FC = () => {
       sourceType: "raster",
       authOptions: { accessToken },
     };
-
+  
     try {
       // Inicializa el mapa
       mapInstanceRef.current = new window.HWMapJsSDK.HWMap(
@@ -82,15 +82,35 @@ const MapView: React.FC = () => {
         mapOptions
       );
       console.log("Mapa inicializado correctamente.");
-
-      // Añadir los marcadores solo cuando las instituciones están cargadas
+  
+      // Lógica para asignar un icono según el tipo de institución
       institutions.forEach((institution) => {
         if (institution.latitude && institution.longitude) {
           console.log(
             `Marcador para ${institution.name} en lat: ${institution.latitude}, lng: ${institution.longitude}`
           );
-
-          // Crear un marcador para cada institución
+  
+          // Determina el icono en base al tipo de institución
+          let iconUrl = "/Images/Icons/Default.png"; // Icono por defecto
+  
+          switch (institution.type) {
+            case "Hospital":
+              iconUrl = "/Images/Icons/Hospital.png";
+              break;
+            case "Fire Fighters":
+              iconUrl = "/Images/Icons/Firefighter.png";
+              break;
+            case "Transit":
+              iconUrl = "/Images/Icons/Transit.png";
+              break;
+            case "Police":
+              iconUrl = "/Images/Icons/Police.png";
+              break;
+            default:
+              console.warn(`Tipo de institución desconocido: ${institution.type}`);
+          }
+  
+          // Crear un marcador con el icono correspondiente
           new window.HWMapJsSDK.HWMarker({
             map: mapInstanceRef.current,
             position: { lat: institution.latitude, lng: institution.longitude },
@@ -102,7 +122,7 @@ const MapView: React.FC = () => {
             },
             icon: {
               scale: 0.1,
-              url: "/Images/Icons/Hospital.png", // Asegúrate de que la ruta del icono sea correcta
+              url: iconUrl, // Usar el icono dinámico
             },
             infoWindow: {
               content: `<h4>${institution.name}</h4><p>Type: ${institution.type}</p>`,
