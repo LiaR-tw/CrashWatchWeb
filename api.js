@@ -10,6 +10,7 @@ const userRoutes = require("./routes/userRoutes");
 require('dotenv').config();
 
 const jwt = require("jsonwebtoken");
+const { stat } = require('fs');
 
 const app = express();
 
@@ -261,6 +262,71 @@ app.get('/institutions', async (req, res) => {
     }
   });
 
+  app.put('/institutions/:id', async (req, res) => {
+    const { id } = req.params;
+    const {
+      name,
+      description,
+      phone,
+      address,
+      latitude,
+      longitude,
+      status,
+      type,  // nombre del tipo de institución
+      county, // nombre del condado
+    } = req.body;
+  
+    try {
+      // Primero, obtenemos los IDs para 'idInstitutionType' y 'idCounty' desde la base de datos
+      const typeQuery = 'SELECT id FROM "InstitutionTypes" WHERE name = $1';
+      const countyQuery = 'SELECT id FROM "Counties" WHERE name = $1';
+  
+      const typeResult = await pool.query(typeQuery, [type]);
+      const countyResult = await pool.query(countyQuery, [county]);
+  
+      if (typeResult.rowCount === 0) {
+        return res.status(404).json({ message: 'Institution type no encontrado' });
+      }
+  
+      if (countyResult.rowCount === 0) {
+        return res.status(404).json({ message: 'County no encontrado' });
+      }
+  
+      const idInstitutionType = typeResult.rows[0].id;  // El ID del tipo de institución
+      const idCounty = countyResult.rows[0].id;          // El ID del condado
+  
+      // Ahora, procedemos con la actualización de la institución
+      const query = 
+        'UPDATE "Institution" SET name = $1, description = $2, phone = $3, address = $4, latitude = $5, longitude = $6, status = $7, "idInstitutionType" = $8, "idCounty" = $9 WHERE id = $10 RETURNING *';
+  
+      const result = await pool.query(query, [
+        name,
+        description,
+        phone,
+        address,
+        latitude,
+        longitude,
+        status,
+        idInstitutionType,  // Usamos el ID de la institución
+        idCounty,            // Usamos el ID del condado
+        id,
+      ]);
+  
+      if (result.rowCount === 0) {
+        return res.status(404).json({ message: 'Institution no encontrada' });
+      }
+  
+      res.status(200).json({
+        message: 'Institution updated!',
+        institution: result.rows[0], // Devolvemos la institución actualizada
+      });
+    } catch (error) {
+      console.error('Error al actualizar la Institution:', error);
+      res.status(500).json({ message: 'Error en el servidor' });
+    }
+  });
+  
+  
 
 //Login Implementation
 

@@ -1,14 +1,19 @@
+
+//****
 import React, { useEffect, useRef, useState } from "react";
 
 type Institution = {
   name: string;
+  phone: number;
+  address: string;
   latitude: number;
   longitude: number;
+  status: number;
   type: string;
+  county: string;
 };
 
-const accessToken =
-  "DQEDACk4MlhnmOmdmSVkBNDeJZ6qPhCndg2EUV5ihtAlqHuAbdy5dIY7wfMhlkZZXQc9Z8nFXfWaT3zoZ2pTOsC8soZE8pYPcSOnBQ==";
+const accessToken = "DQEDACk4MlhnmOmdmSVkBNDeJZ6qPhCndg2EUV5ihtAlqHuAbdy5dIY7wfMhlkZZXQc9Z8nFXfWaT3zoZ2pTOsC8soZE8pYPcSOnBQ==";
 
 const MapView: React.FC = () => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -19,26 +24,83 @@ const MapView: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [types, setTypes] = useState<string[]>([]);
 
+  const initMap = () => {
+    if (mapInstanceRef.current || !window.HWMapJsSDK || !mapContainerRef.current) {
+      console.log("El mapa ya está inicializado o el SDK no está disponible.");
+      return;
+    }
+
+    const mapOptions = {
+      center: { lat: -17.38333333, lng: -66.16666667 },
+      zoom: 8,
+      language: "ENG",
+      sourceType: "raster",
+      authOptions: { accessToken },
+    };
+
+    try {
+      mapInstanceRef.current = new window.HWMapJsSDK.HWMap(
+        mapContainerRef.current,
+        mapOptions
+      );
+      console.log("Mapa inicializado correctamente.");
+
+      // Ahora que el mapa está listo, añadimos los marcadores
+      addMarkers();
+    } catch (error) {
+      console.error("Error al inicializar el mapa:", error);
+      setLoadError("Error al inicializar el mapa.");
+    }
+  };
+
+  const addMarkers = () => {
+    institutions.forEach((institution) => {
+      if (
+        institution.latitude &&
+        institution.longitude &&
+        institution.status === 1
+      ) {
+        console.log(
+          `Marcador para ${institution.name} en lat: ${institution.latitude}, lng: ${institution.longitude}`
+        );
+
+        // Crear un marcador para cada institución
+        new window.HWMapJsSDK.HWMarker({
+          map: mapInstanceRef.current,
+          position: { lat: institution.latitude, lng: institution.longitude },
+          zIndex: 10,
+          label: {
+            text: `${institution.name} (${institution.type})`,
+            offsetY: -40,
+            fontSize: "14px",
+          },
+          icon: {
+            scale: 0.5,
+            url: "/Images/Icons/Hospital.png", // Asegúrate de que la ruta del icono sea correcta
+          },
+          infoWindow: {
+            content: `<h4>${institution.name}</h4><p>Type: ${institution.type}</p><p>Address: ${institution.address}</p>`,
+          },
+        });
+      } else {
+        console.error(`Coordenadas no válidas o institución inactiva para ${institution.name}`);
+      }
+    });
+  };
+
   const fetchData = async () => {
     setIsLoading(true);
+    setLoadError(null); // Resetear el error en cada intento de carga.
 
     try {
       // Obtener instituciones
       const institutionsResponse = await fetch("http://localhost:3005/institutions");
       if (!institutionsResponse.ok) throw new Error("Failed to fetch institutions.");
       const institutionsData = await institutionsResponse.json();
-      if (Array.isArray(institutionsData)) {
-        const mappedInstitutions = institutionsData.map((institution) => ({
-          latitude: institution.latitude,
-          longitude: institution.longitude,
-          name: institution.name,
-          type: institution.type,
-        }));
-        setInstitutions(mappedInstitutions);
-      }
+      setInstitutions(Array.isArray(institutionsData) ? institutionsData : []);
 
       // Obtener tipos de institución
-      const typesResponse = await fetch("http://localhost:3005/institutionTypes");
+      const typesResponse = await fetch("http://localhost:3005/institutionTypesAvailable");
       if (!typesResponse.ok) throw new Error("Failed to fetch institution types.");
       const typesData = await typesResponse.json();
       if (Array.isArray(typesData)) {
@@ -57,69 +119,7 @@ const MapView: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const initMap = () => {
-    if (mapInstanceRef.current || !window.HWMapJsSDK || !mapContainerRef.current) {
-      console.log("El mapa ya está inicializado o el SDK no está disponible.");
-      return;
-    }
-
-    const mapOptions = {
-      center: { lat: -17.38333333, lng: -66.16666667 },
-      zoom: 8,
-      language: "ENG",
-      sourceType: "raster",
-      authOptions: { accessToken },
-    };
-
-    try {
-      // Inicializa el mapa
-      mapInstanceRef.current = new window.HWMapJsSDK.HWMap(
-        mapContainerRef.current,
-        mapOptions
-      );
-      console.log("Mapa inicializado correctamente.");
-
-      // Añadir los marcadores solo cuando las instituciones están cargadas
-      institutions.forEach((institution) => {
-        if (institution.latitude && institution.longitude) {
-          console.log(
-            `Marcador para ${institution.name} en lat: ${institution.latitude}, lng: ${institution.longitude}`
-          );
-
-          // Crear un marcador para cada institución
-          new window.HWMapJsSDK.HWMarker({
-            map: mapInstanceRef.current,
-            position: { lat: institution.latitude, lng: institution.longitude },
-            zIndex: 10,
-            label: {
-              text: `${institution.name} (${institution.type})`,
-              offsetY: -40,
-              fontSize: "14px",
-            },
-            icon: {
-              scale: 0.1,
-              url: "/Images/Icons/Hospital.png", // Asegúrate de que la ruta del icono sea correcta
-            },
-            infoWindow: {
-              content: `<h4>${institution.name}</h4><p>Type: ${institution.type}</p>`,
-            },
-          });
-        } else {
-          console.error(
-            `Coordenadas no válidas o institución inactiva para ${institution.name}`
-          );
-        }
-      });
-    } catch (error) {
-      console.error("Error al inicializar el mapa:", error);
-      setLoadError("Error al inicializar el mapa.");
-    }
-  };
-
+  // useEffect para cargar el SDK de Huawei Maps
   useEffect(() => {
     const scriptSrc = `https://mapapi.cloud.huawei.com/mapjs/v1/api/js?key=${accessToken}&callback=initMap`;
 
@@ -128,8 +128,8 @@ const MapView: React.FC = () => {
       if (existingScript) {
         console.log("El SDK ya está cargado, inicializando el mapa...");
         (window as any).initMap = initMap; // Callback para el SDK
-        if (institutions.length > 0) {
-          initMap(); // Solo inicializa el mapa cuando las instituciones estén cargadas
+        if (isLoaded) {
+          initMap();
         }
         return;
       }
@@ -160,7 +160,12 @@ const MapView: React.FC = () => {
 
       delete (window as any).initMap;
     };
-  }, [institutions]); // Dependencia a institutions para asegurarnos de que se inicialice cuando lleguen los datos
+  }, []); // Elimina las dependencias cambiantes
+
+  // useEffect para cargar las instituciones y tipos
+  useEffect(() => {
+    fetchData();
+  }, []); // Este useEffect solo se ejecuta una vez al cargar el componente
 
   return (
     <div style={{ display: "flex", justifyContent: "center", height: "75vh", width: "100%" }}>
@@ -187,8 +192,12 @@ const MapView: React.FC = () => {
             institutions.map((institution, index) => (
               <li key={index}>
                 <strong>{institution.name}</strong><br />
+                Dirección: {institution.address}<br />
+                Teléfono: {institution.phone}<br />
                 Tipo: {institution.type}<br />
+                Estado: {institution.status === 1 ? "Activo" : "Inactivo"}<br />
                 Coordenadas: ({institution.latitude}, {institution.longitude})<br />
+                Condado: {institution.county}
               </li>
             ))
           ) : (
@@ -212,3 +221,4 @@ const MapView: React.FC = () => {
 };
 
 export default MapView;
+
