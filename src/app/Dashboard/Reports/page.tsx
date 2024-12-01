@@ -6,7 +6,7 @@ type Accident = {
   institution: string | null;
   location: string;
   time: string;
-  type: string;
+  accidentTypes: string[];
 };
 
 const ReportsTable: React.FC = () => {
@@ -17,7 +17,7 @@ const ReportsTable: React.FC = () => {
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        const response = await fetch("http://localhost:3005/ReportsV"); // Cambia la URL según corresponda
+        const response = await fetch("http://localhost:3005/ReportsAcidentes"); // Cambia la URL según corresponda
         if (!response.ok) throw new Error("Failed to fetch reports.");
         const data = await response.json();
 
@@ -28,7 +28,7 @@ const ReportsTable: React.FC = () => {
           institution: report.institutions?.[0]?.name || "Sin institución asignada",
           location: `${report.latitude}, ${report.longitude}`,
           time: report.registerDate,
-          type: report.description || "Desconocido",
+          accidentTypes: report.accidentTypes?.map((type: any) => type.name) || ["Sin tipo"],
         }));
 
         setReports(mappedReports);
@@ -64,7 +64,8 @@ const ReportsTable: React.FC = () => {
               <th className="py-3 px-6 text-left">Institución</th>
               <th className="py-3 px-6 text-left">Ubicación</th>
               <th className="py-3 px-6 text-left">Hora</th>
-              <th className="py-3 px-6 text-left">Descripcion del accidente</th>
+              <th className="py-3 px-6 text-left">Tipos de Accidente</th>
+              <th className="py-3 px-6 text-center">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -78,7 +79,14 @@ const ReportsTable: React.FC = () => {
                 <td className="py-3 px-6">{report.institution}</td>
                 <td className="py-3 px-6">{report.location}</td>
                 <td className="py-3 px-6">{new Date(report.time).toLocaleString()}</td>
-                <td className="py-3 px-6">{report.type}</td>
+                <td className="py-3 px-6">{report.accidentTypes.join(", ")}</td>
+                <td className="py-3 px-6 text-center">
+                  <button
+                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+                  >
+                    Acción
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>

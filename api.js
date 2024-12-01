@@ -788,6 +788,154 @@ app.put('/ReportsV/:id', async (req, res) => {
     res.status(500).json({ error: "Error en el servidor." });
   }
 });
+//ver los reportes de accidentes
+app.get('/ReportsAcidentes', async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        r.id AS accident_id,
+        r.description AS accident_description,
+        r.latitude AS accident_latitude,
+        r.longitude AS accident_longitude,
+        r.status AS accident_status,
+        r."registerDate" AS accident_register_date,
+        r."lastUpdate" AS accident_last_update,
+        u.name AS user_name,
+        u.lastname AS user_lastname,
+        i.id AS institution_id,
+        i.name AS institution_name,
+        it.name AS institution_type, 
+        i.status AS institution_status,
+        img.url AS image_url,
+        at.id AS accident_type_id,
+        at.name AS accident_type_name
+      FROM public."Report" r
+      LEFT JOIN public."User" u ON r."idUser" = u.id
+      LEFT JOIN public."AssigmentAccident" aa ON r.id = aa."idReport"
+      LEFT JOIN public."Institution" i ON aa."idInstitution" = i.id
+      LEFT JOIN public."InstitutionType" it ON i."idInstitutionType" = it.id
+      LEFT JOIN public."Image" img ON img."idReport" = r.id
+      LEFT JOIN public."AccidentReport" ar ON r.id = ar."idReport"
+      LEFT JOIN public."AccidentType" at ON ar."idAccidentType" = at.id
+      ORDER BY r.id;
+    `;
+
+    const result = await pool.query(query);
+
+    // Agrupar datos por accidente
+    const accidents = {};
+    result.rows.forEach((row) => {
+      if (!accidents[row.accident_id]) {
+        accidents[row.accident_id] = {
+          id: row.accident_id,
+          description: row.accident_description,
+          latitude: row.accident_latitude,
+          longitude: row.accident_longitude,
+          status: row.accident_status,
+          registerDate: row.accident_register_date,
+          lastUpdate: row.accident_last_update,
+          user: {
+            name: row.user_name || null, // Captura el nombre del usuario
+            lastname: row.user_lastname || null, // Captura el apellido del usuario
+          },
+          institutions: [], // Inicializa el arreglo de instituciones
+          images: [], // Inicializa el arreglo de imágenes
+          accidentTypes: [], // Inicializa el arreglo de tipos de accidentes
+        };
+      }
+
+      // Agregar institución si existe
+      if (row.institution_id) {
+        const institutionExists = accidents[row.accident_id].institutions.some(
+          (inst) => inst.id === row.institution_id
+        );
+
+        if (!institutionExists) {
+          accidents[row.accident_id].institutions.push({
+            id: row.institution_id,
+            name: row.institution_name,
+            type: row.institution_type,
+            status: row.institution_status,
+          });
+        }
+      }
+
+      // Agregar imagen si existe
+      if (row.image_url && !accidents[row.accident_id].images.includes(row.image_url)) {
+        accidents[row.accident_id].images.push(row.image_url);
+      }
+
+      // Agregar tipo de accidente si existe
+      if (row.accident_type_id) {
+        const accidentTypeExists = accidents[row.accident_id].accidentTypes.some(
+          (type) => type.id === row.accident_type_id
+        );
+
+        if (!accidentTypeExists) {
+          accidents[row.accident_id].accidentTypes.push({
+            id: row.accident_type_id,
+            name: row.accident_type_name,
+          });
+        }
+      }
+    });
+
+    // Convertir el objeto de accidentes en un arreglo
+    res.status(200).json(Object.values(accidents));
+  } catch (error) {
+    console.error('Error al obtener reportes:', error);
+    res.status(500).json({ error: 'Error en el servidor' });
+  }
+});
+// Obtener un reporte específico por ID
+app.get('/ReportsAcidentes/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const query = `
+      SELECT 
+        r.id AS accident_id,
+        r.description AS accident_description,
+        r.latitude AS accident_latitude,
+        r.longitude AS accident_longitude,
+        r.status AS accident_status,
+        r."registerDate" AS accident_register_date,
+        r."lastUpdate" AS accident_last_update,
+        u.name AS user_name,
+        u.lastname AS user_lastname,
+        i.id AS institution_id,
+        i.name AS institution_name,
+        it.name AS institution_type, 
+        i.status AS institution_status,
+        img.url AS image_url,
+        at.id AS accident_type_id,
+        at.name AS accident_type_name
+      FROM public."Report" r
+      LEFT JOIN public."User" u ON r."idUser" = u.id
+      LEFT JOIN public."AssigmentAccident" aa ON r.id = aa."idReport"
+      LEFT JOIN public."Institution" i ON aa."idInstitution" = i.id
+      LEFT JOIN public."InstitutionType" it ON i."idInstitutionType" = it.id
+      LEFT JOIN public."Image" img ON img."idReport" = r.id
+      LEFT JOIN public."AccidentReport" ar ON r.id = ar."idReport"
+      LEFT JOIN public."AccidentType" at ON ar."idAccidentType" = at.id
+      WHERE r.id = $1
+      ORDER BY r.id;
+    `;
+
+    const result = await pool.query(query, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Accidente no encontrado.' });
+    }
+
+    // Procesar datos aquí (similar a lo mostrado anteriormente)
+    const accident = { /* Procesa los datos */ };
+    res.status(200).json(accident);
+  } catch (error) {
+    console.error('Error al obtener el accidente:', error);
+    res.status(500).json({ error: 'Error en el servidor.' });
+  }
+});
+
 
 //asigana instituciones
 

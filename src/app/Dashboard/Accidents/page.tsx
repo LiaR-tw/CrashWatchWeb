@@ -13,7 +13,13 @@ const AccidentsView: React.FC = () => {
         const response = await fetch("http://localhost:3005/ReportsV");
         if (!response.ok) throw new Error("Failed to fetch accidents.");
         const data = await response.json();
-        setAccidents(data);
+
+        // Filtrar solo los accidentes con estado 1 o 2
+        const filteredAccidents = data.filter(
+          (accident: any) => accident.status === 1 || accident.status === 2
+        );
+
+        setAccidents(filteredAccidents);
       } catch (err) {
         console.error("Error fetching accidents:", err);
         setError("Error fetching accidents.");
@@ -57,8 +63,6 @@ const AccidentsView: React.FC = () => {
                 ? "border-red-500"
                 : accident.status === 2
                 ? "border-green-500"
-                : accident.status === 3
-                ? "border-orange-500"
                 : "border-gray-300"
             }`}
           >
@@ -99,8 +103,6 @@ const AccidentsView: React.FC = () => {
                       ? "text-red-500"
                       : accident.status === 2
                       ? "text-green-500"
-                      : accident.status === 3
-                      ? "text-orange-500"
                       : "text-gray-500"
                   }`}
                 >
@@ -108,8 +110,6 @@ const AccidentsView: React.FC = () => {
                     ? "No Revisado"
                     : accident.status === 2
                     ? "Aceptado"
-                    : accident.status === 3
-                    ? "Finalizado"
                     : "Desconocido"}
                 </p>
               </div>
@@ -124,17 +124,16 @@ const AccidentsView: React.FC = () => {
                 ))}
               </ul>
 
-              {/* Botón Confirmar Accidente */}
+              {/* Botón Confirmar o Ver */}
               <button
                 onClick={() => handleReadMore(accident.id)}
-                disabled={accident.status !== 1}
                 className={`px-4 py-2 rounded-lg ${
                   accident.status === 1
                     ? "bg-blue-500 text-white hover:bg-blue-600"
-                    : "bg-blue-300 text-white cursor-not-allowed"
+                    : "bg-green-300 text-gray-700 hover:bg-green-400"
                 }`}
               >
-                Confirmar Accidente
+                {accident.status === 1 ? "Confirmar Accidente" : "Ver Accidente"}
               </button>
             </div>
           </div>

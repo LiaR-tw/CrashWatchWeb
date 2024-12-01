@@ -9,9 +9,9 @@ interface RequestAccidentProps {
 const RequestAccident: React.FC<RequestAccidentProps> = ({ accidentId, onBack }) => {
   const [accidentData, setAccidentData] = useState<any>(null);
   const [isModalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<"accept" | "cancel" | null>(null);
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [currentView, setCurrentView] = useState<"details" | "institutions">("details");
+  const [modalType, setModalType] = useState<"delete" | "finalize" | null>(null);
 
   useEffect(() => {
     const fetchAccidentData = async () => {
@@ -42,10 +42,11 @@ const RequestAccident: React.FC<RequestAccidentProps> = ({ accidentId, onBack })
       const data = await response.json();
       setAccidentData((prevData: any) => ({ ...prevData, status: data.data.status }));
 
-      if (newStatus === 2) {
-        setCurrentView("institutions"); // Cambiamos la vista a "institutions" cuando se confirma el accidente
+      // Redirige a la página principal si es eliminar (status 0) o finalizar (status 3)
+      if (newStatus === 0 || newStatus === 3) {
+        onBack();
       } else {
-        alert("El accidente ha sido cancelado.");
+        alert("El accidente ha sido actualizado.");
       }
     } catch (err) {
       console.error("Error updating status:", err);
@@ -56,14 +57,14 @@ const RequestAccident: React.FC<RequestAccidentProps> = ({ accidentId, onBack })
     }
   };
 
-  const handleOpenModal = (type: "accept" | "cancel") => {
+  const openModal = (type: "delete" | "finalize") => {
     setModalType(type);
     setModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setModalOpen(false);
+  const closeModal = () => {
     setModalType(null);
+    setModalOpen(false);
   };
 
   if (currentView === "institutions") {
@@ -73,6 +74,9 @@ const RequestAccident: React.FC<RequestAccidentProps> = ({ accidentId, onBack })
   if (!accidentData) {
     return <div className="text-center text-lg font-semibold">Cargando...</div>;
   }
+
+  const isEditable = accidentData.status === 1;
+  const isFinalizable = accidentData.status === 2;
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -126,56 +130,70 @@ const RequestAccident: React.FC<RequestAccidentProps> = ({ accidentId, onBack })
         {accidentData.audio && (
           <div className="mt-6">
             <h3 className="text-xl font-bold mb-2">Audio:</h3>
-            <audio
-              className="w-full rounded shadow"
-              controls
-            >
+            <audio className="w-full rounded shadow" controls>
               <source src={accidentData.audio} type="audio/mpeg" />
               Tu navegador no soporta audio.
             </audio>
           </div>
         )}
 
-        <div className="flex space-x-4 mt-4">
-          <button
-            onClick={() => handleOpenModal("accept")}
-            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 disabled:opacity-50"
-            disabled={isUpdating}
-          >
-            Confirmar
-          </button>
-          <button
-            onClick={() => handleOpenModal("cancel")}
-            className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 disabled:opacity-50"
-            disabled={isUpdating}
-          >
-            Cancelar
-          </button>
-        </div>
+        {/* Botones de Confirmar/Eliminar */}
+        {isEditable && (
+          <div className="flex space-x-4 mt-4">
+            <button
+              onClick={() => updateStatus(2)} // Confirmar cambia a status 2
+              className="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600"
+              disabled={isUpdating}
+            >
+              Confirmar
+            </button>
+            <button
+              onClick={() => openModal("delete")} // Abre el modal para eliminar
+              className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600"
+              disabled={isUpdating}
+            >
+              Eliminar Accidente
+            </button>
+          </div>
+        )}
+
+        {/* Botón Finalizar */}
+        {isFinalizable && (
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={() => openModal("finalize")} // Abre el modal para finalizar
+              className="px-4 py-2 rounded-lg bg-purple-500 text-white hover:bg-purple-600"
+              disabled={isUpdating}
+            >
+              Finalizar Accidente
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Modal */}
+      {/* Modal de Confirmación */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 shadow-lg w-80">
             <h3 className="text-lg font-bold mb-4">
-              {modalType === "accept" && "¿Deseas confirmar esta solicitud?"}
-              {modalType === "cancel" && "¿Deseas cancelar esta solicitud?"}
+              {modalType === "delete"
+                ? "¿Seguro que deseas eliminar este accidente?"
+                : "¿Seguro que deseas finalizar este accidente?"}
             </h3>
             <div className="flex justify-end space-x-4">
               <button
-                onClick={handleCloseModal}
+                onClick={closeModal}
                 className="bg-gray-300 text-black px-4 py-2 rounded-lg"
               >
-                No
+                Cancelar
               </button>
               <button
-                onClick={() => updateStatus(modalType === "accept" ? 2 : 0)}
+                onClick={() => updateStatus(modalType === "delete" ? 0 : 3)} // Confirmar acción
                 className={`${
-                  modalType === "accept" ? "bg-green-500" : "bg-red-500"
+                  modalType === "delete" ? "bg-red-500" : "bg-purple-500"
                 } text-white px-4 py-2 rounded-lg`}
               >
-                Sí
+                {modalType === "delete" ? "Eliminar" : "Finalizar"}
               </button>
             </div>
           </div>
