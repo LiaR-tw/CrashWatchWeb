@@ -1,180 +1,169 @@
-"use client";
-
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import AccidentsView from "./page";
 
-type Institution = {
+interface Institution {
+  id: number;
   name: string;
   type: string;
-  phone: string;
-  email: string;
   city: string;
-  status: "Active" | "Inactive";
-};
+}
 
-const institutions: Institution[] = [
-  { name: "Univalle", type: "Hospital", phone: "+591 95566117", email: "univalle231@gmail.com", city: "Cochabamba", status: "Active" },
-  { name: "Viedman", type: "Hospital", phone: "+591 95566117", email: "viedma885@yahoo.com", city: "Cochabamba", status: "Inactive" },
-  { name: "Transit", type: "Police", phone: "+591 8723952", email: "ronald@adobe.com", city: "Cochabamba", status: "Inactive" },
-  { name: "Comand", type: "Police", phone: "+591 7832159", email: "marvin@tesla.com", city: "Cochabamba", status: "Active" },
-  { name: "Sar", type: "Firefighters", phone: "+10 97881541", email: "jerome@google.com", city: "Santa Cruz", status: "Active" },
-];
+interface CheckInstitutionsProps {
+  accidentId: number;
+}
 
-const CheckInstitutions: React.FC = () => {
-  const [currentView, setCurrentView] = useState<string>("table");
+const CheckInstitutions: React.FC<CheckInstitutionsProps> = ({ accidentId }) => {
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [selectedInstitutions, setSelectedInstitutions] = useState<Record<number, boolean>>({});
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [modalContent, setModalContent] = useState<JSX.Element | null>(null);
+  const [isAssigned, setIsAssigned] = useState<boolean>(false); // Para manejar el redireccionamiento
 
-  const handleCheckboxChange = (index: number) => {
+  useEffect(() => {
+    const fetchInstitutions = async () => {
+      try {
+        const response = await fetch("http://localhost:3005/institutionsView");
+        if (!response.ok) throw new Error("Failed to fetch institutions.");
+        const data = await response.json();
+        const mappedData = data.map((inst: any) => ({
+          id: inst.institution_id,
+          name: inst.institution_name,
+          type: inst.institution_type,
+          city: inst.city_name,
+        }));
+        setInstitutions(mappedData);
+      } catch (err) {
+        console.error("Error fetching institutions:", err);
+        setError("Error fetching institutions.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchInstitutions();
+  }, []);
+
+  const handleCheckboxChange = (id: number) => {
     setSelectedInstitutions((prev) => ({
       ...prev,
-      [index]: !prev[index],
+      [id]: !prev[id],
     }));
   };
 
-  const openModal = (type: "send" | "cancel") => {
-    const selectedCount = Object.values(selectedInstitutions).filter(Boolean).length;
+  const assignInstitutions = async () => {
+    const selectedIds = Object.keys(selectedInstitutions).filter(
+      (id) => selectedInstitutions[parseInt(id)]
+    );
 
-    if (type === "send") {
-      setModalContent(
-        <div>
-          <h3 className="text-xl font-semibold">Confirm Send</h3>
-          <p className="mt-2">
-            You have selected <strong>{selectedCount}</strong> institution(s). Are you sure you want to send them?
-          </p>
-          <div className="mt-4 flex justify-end gap-2">
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                setIsModalOpen(false);
-                setCurrentView("accidents");
-              }}
-              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
-            >
-              Confirm
-            </button>
-          </div>
-        </div>
-      );
-    } else if (type === "cancel") {
-      setModalContent(
-        <div>
-          <h3 className="text-xl font-semibold">Confirm Cancel</h3>
-          <p className="mt-2">Are you sure you want to cancel and exit?</p>
-          <div className="mt-4 flex justify-end gap-2">
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400"
-            >
-              No
-            </button>
-            <button
-              onClick={() => {
-                setIsModalOpen(false);
-                setCurrentView("accidents");
-              }}
-              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-            >
-              Yes, Exit
-            </button>
-          </div>
-        </div>
-      );
-    }
+    try {
+      const response = await fetch("http://localhost:3005/assignInstitution", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idReport: accidentId, institutions: selectedIds }),
+      });
 
-    setIsModalOpen(true);
-  };
+      if (!response.ok) throw new Error("Error al asignar las instituciones.");
 
-  const renderContent = () => {
-    if (currentView === "table") {
-      return (
-        <div>
-          <h2 className="text-3xl font-semibold mb-6 text-center text-gray-800">All Institutions</h2>
-          <div className="flex justify-between items-center mb-6">
-            <input
-              type="text"
-              placeholder="Search"
-              className="border rounded-lg px-4 py-2 w-1/3 text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <select className="border rounded-lg px-4 py-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <option value="newest">Sort by: Newest</option>
-              <option value="oldest">Sort by: Oldest</option>
-            </select>
-          </div>
-          <table className="min-w-full bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <thead className="bg-gradient-to-r from-[#4F46E5] to-[#6B7AE8] text-white">
-              <tr>
-                <th className="py-3 px-6 text-left">Select</th>
-                <th className="py-3 px-6 text-left">Name</th>
-                <th className="py-3 px-6 text-left">Type</th>
-                <th className="py-3 px-6 text-left">Phone</th>
-                <th className="py-3 px-6 text-left">Email</th>
-                <th className="py-3 px-6 text-left">City</th>
-                <th className="py-3 px-6 text-left">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {institutions.map((institution, index) => (
-                <tr key={index} className="border-b hover:bg-gray-50 transition-all duration-200">
-                  <td className="py-3 px-6">
-                    <input
-                      type="checkbox"
-                      checked={!!selectedInstitutions[index]}
-                      onChange={() => handleCheckboxChange(index)}
-                      className="form-checkbox h-5 w-5 text-indigo-600"
-                    />
-                  </td>
-                  <td className="py-3 px-6">{institution.name}</td>
-                  <td className="py-3 px-6">{institution.type}</td>
-                  <td className="py-3 px-6">{institution.phone}</td>
-                  <td className="py-3 px-6">{institution.email}</td>
-                  <td className="py-3 px-6">{institution.city}</td>
-                  <td className="py-3 px-6">
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                        institution.status === "Active" ? "bg-green-200 text-green-700" : "bg-red-200 text-red-700"
-                      }`}
-                    >
-                      {institution.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="mt-6 text-center flex justify-center gap-4">
-            <button
-              onClick={() => openModal("cancel")}
-              className="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-colors duration-300"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => openModal("send")}
-              className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors duration-300"
-            >
-              Send
-            </button>
-          </div>
-        </div>
-      );
-    } else if (currentView === "accidents") {
-      return <AccidentsView />;
+      const data = await response.json();
+      alert("Instituciones asignadas exitosamente.");
+      setIsAssigned(true); // Cambiamos el estado para redirigir
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Error al asignar las instituciones.");
     }
   };
+
+  // Redirigir a `AccidentsView` si las instituciones se asignaron con éxito
+  if (isAssigned) {
+    return <AccidentsView />;
+  }
+
+  if (isLoading) {
+    return <div className="text-center text-lg font-semibold">Cargando instituciones...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center text-red-500">{error}</div>;
+  }
 
   return (
-    <div className="px-8 py-6">
-      {renderContent()}
+    <div className="container mx-auto px-8 py-6">
+      <h1 className="text-2xl font-bold mb-4 text-gray-800 text-center">
+        Asignar Instituciones al Accidente ID: <span className="text-blue-500">{accidentId}</span>
+      </h1>
+
+      <table className="min-w-full bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <thead className="bg-gradient-to-r from-[#4F46E5] to-[#6B7AE8] text-white">
+          <tr>
+            <th className="py-3 px-6 text-left">Seleccionar</th>
+            <th className="py-3 px-6 text-left">Nombre</th>
+            <th className="py-3 px-6 text-left">Tipo</th>
+            <th className="py-3 px-6 text-left">Ciudad</th>
+          </tr>
+        </thead>
+        <tbody>
+          {institutions.map((institution) => (
+            <tr
+              key={institution.id}
+              className="border-b hover:bg-gray-50 transition-all duration-200"
+            >
+              <td className="py-3 px-6">
+                <input
+                  type="checkbox"
+                  checked={!!selectedInstitutions[institution.id]}
+                  onChange={() => handleCheckboxChange(institution.id)}
+                  className="form-checkbox h-5 w-5 text-indigo-600"
+                />
+              </td>
+              <td className="py-3 px-6">{institution.name}</td>
+              <td className="py-3 px-6">{institution.type}</td>
+              <td className="py-3 px-6">{institution.city}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <div className="mt-6 text-center flex justify-center gap-4">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors duration-300"
+        >
+          Asignar Instituciones
+        </button>
+        <button
+          onClick={() => setIsAssigned(true)} // Regresar sin guardar
+          className="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-colors duration-300"
+        >
+          Cancelar
+        </button>
+      </div>
+
+      {/* Modal de confirmación */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white rounded-lg p-6 shadow-lg">{modalContent}</div>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-96">
+            <h2 className="text-lg font-bold text-gray-800 mb-4">
+              ¿Estás seguro de asignar las instituciones seleccionadas?
+            </h2>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setIsModalOpen(false)} // Cerrar el modal
+                className="bg-gray-300 px-4 py-2 rounded-lg hover:bg-gray-400"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  setIsModalOpen(false);
+                  assignInstitutions();
+                }}
+                className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

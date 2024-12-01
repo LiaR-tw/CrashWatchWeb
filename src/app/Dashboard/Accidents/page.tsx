@@ -1,17 +1,35 @@
-"use client";
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import RequestAccident from "./RequestAccident";
 
 const AccidentsView: React.FC = () => {
   const [selectedAccident, setSelectedAccident] = useState<number | null>(null);
+  const [accidents, setAccidents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleReadMore = (index: number) => {
-    setSelectedAccident(index);
+  useEffect(() => {
+    const fetchAccidents = async () => {
+      try {
+        const response = await fetch("http://localhost:3005/ReportsV");
+        if (!response.ok) throw new Error("Failed to fetch accidents.");
+        const data = await response.json();
+        setAccidents(data);
+      } catch (err) {
+        console.error("Error fetching accidents:", err);
+        setError("Error fetching accidents.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAccidents();
+  }, []);
+
+  const handleReadMore = (accidentId: number) => {
+    setSelectedAccident(accidentId);
   };
 
   if (selectedAccident !== null) {
-    // Muestra la página de solicitud de accidente
     return (
       <RequestAccident
         accidentId={selectedAccident}
@@ -20,40 +38,105 @@ const AccidentsView: React.FC = () => {
     );
   }
 
+  if (isLoading) {
+    return <div className="text-center text-lg font-semibold">Cargando...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center text-red-500">{error}</div>;
+  }
+
   return (
-    <div>
-      <div className="grid grid-cols-3 gap-4 mt-6">
-        {Array.from({ length: 6 }).map((_, index) => (
+    <div className="container mx-auto px-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+        {accidents.map((accident) => (
           <div
-            key={index}
-            className="bg-white rounded-lg shadow p-4 flex flex-col"
+            key={accident.id}
+            className={`rounded-lg shadow-lg overflow-hidden border-4 ${
+              accident.status === 1
+                ? "border-red-500"
+                : accident.status === 2
+                ? "border-green-500"
+                : accident.status === 3
+                ? "border-orange-500"
+                : "border-gray-300"
+            }`}
           >
-            <div className="flex items-center mb-4">
-              <img
-                src="/path/to/avatar.png"
-                alt="Avatar"
-                className="w-8 h-8 rounded-full mr-3"
-              />
-              <div>
-                <p className="font-bold">Joseph</p>
-                <p className="text-sm text-gray-500">Cercado, Cochabamba</p>
-              </div>
+            {/* Nombre del usuario en la parte superior */}
+            <div className="bg-gray-100 px-4 py-2">
+              <h1 className="text-gray-800">
+                Reportado por: {accident.user?.name} {accident.user?.lastname || ""}
+              </h1>
             </div>
-            <img
-              src="/path/to/image.png"
-              alt="Accident"
-              className="rounded-lg mb-4"
-            />
-            <p className="text-sm text-gray-500 mb-4">
-              Lorem ipsum dolor sit amet consectetur. Nibh ornare auctor eu
-              ligula tellus...
-            </p>
-            <button
-              onClick={() => handleReadMore(index)}
-              className="text-blue-500 text-sm font-semibold"
-            >
-              Read more...
-            </button>
+
+            {/* Imágenes del accidente */}
+            <div className="relative h-48">
+              {accident.images && accident.images.length > 0 ? (
+                <img
+                  src={accident.images[0]}
+                  alt={`Accidente ${accident.id}`}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
+                  No hay imagen disponible
+                </div>
+              )}
+            </div>
+
+            {/* Detalles del accidente */}
+            <div className="p-4">
+              <h2 className="font-bold text-lg text-gray-800 mb-2">
+                Descripción: {accident.description}
+              </h2>
+
+              {/* Estado del accidente */}
+              <div className="mb-4">
+                <h3 className="font-bold text-gray-800 mb-1">Estado:</h3>
+                <p
+                  className={`text-sm font-semibold ${
+                    accident.status === 1
+                      ? "text-red-500"
+                      : accident.status === 2
+                      ? "text-green-500"
+                      : accident.status === 3
+                      ? "text-orange-500"
+                      : "text-gray-500"
+                  }`}
+                >
+                  {accident.status === 1
+                    ? "No Revisado"
+                    : accident.status === 2
+                    ? "Aceptado"
+                    : accident.status === 3
+                    ? "Finalizado"
+                    : "Desconocido"}
+                </p>
+              </div>
+
+              {/* Instituciones */}
+              <h3 className="font-bold text-gray-800 mb-2">Instituciones:</h3>
+              <ul className="list-disc pl-5 mb-4">
+                {accident.institutions.map((institution: any) => (
+                  <li key={institution.id} className="text-sm text-gray-600">
+                    {`${institution.name} (${institution.type})`}
+                  </li>
+                ))}
+              </ul>
+
+              {/* Botón Confirmar Accidente */}
+              <button
+                onClick={() => handleReadMore(accident.id)}
+                disabled={accident.status !== 1}
+                className={`px-4 py-2 rounded-lg ${
+                  accident.status === 1
+                    ? "bg-blue-500 text-white hover:bg-blue-600"
+                    : "bg-blue-300 text-white cursor-not-allowed"
+                }`}
+              >
+                Confirmar Accidente
+              </button>
+            </div>
           </div>
         ))}
       </div>

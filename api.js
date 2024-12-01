@@ -582,6 +582,7 @@ app.post('/users', async (req, res) => {
 
 //ACCIDENTS AND REPORTS CRUD
 
+
 app.get('/accidents', async (req, res) => {
   try {
   const result = await pool.query(`SELECT id, name, status, "idState" FROM "County"`);
@@ -593,9 +594,273 @@ app.get('/accidents', async (req, res) => {
 });
 
 
+//
 
 
 
+//reportesdespuesdel registro
+app.get('/ReportsV', async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        r.id AS accident_id,
+        r.description AS accident_description,
+        r.latitude AS accident_latitude,
+        r.longitude AS accident_longitude,
+        r.status AS accident_status,
+        r."registerDate" AS accident_register_date,
+        r."lastUpdate" AS accident_last_update,
+        u.name AS user_name,
+        u.lastname AS user_lastname,
+        i.id AS institution_id,
+        i.name AS institution_name,
+        it.name AS institution_type, 
+        i.status AS institution_status,
+        img.url AS image_url
+      FROM public."Report" r
+      LEFT JOIN public."User" u ON r."idUser" = u.id
+      LEFT JOIN public."AssigmentAccident" aa ON r.id = aa."idReport"
+      LEFT JOIN public."Institution" i ON aa."idInstitution" = i.id
+      LEFT JOIN public."InstitutionType" it ON i."idInstitutionType" = it.id
+      LEFT JOIN public."Image" img ON img."idReport" = r.id
+      ORDER BY r.id;
+    `;
+
+    const result = await pool.query(query);
+
+    // Agrupar datos por accidente
+    const accidents = {};
+    result.rows.forEach((row) => {
+      if (!accidents[row.accident_id]) {
+        accidents[row.accident_id] = {
+          id: row.accident_id,
+          description: row.accident_description,
+          latitude: row.accident_latitude,
+          longitude: row.accident_longitude,
+          status: row.accident_status,
+          registerDate: row.accident_register_date,
+          lastUpdate: row.accident_last_update,
+          user: {
+            name: row.user_name || null, // Captura el nombre del usuario
+            lastname: row.user_lastname || null, // Captura el apellido del usuario
+          },
+          institutions: [], // Inicializa el arreglo de instituciones
+          images: [], // Inicializa el arreglo de imágenes
+        };
+      }
+
+      // Agregar institución si existe
+      if (row.institution_id) {
+        const institutionExists = accidents[row.accident_id].institutions.some(
+          (inst) => inst.id === row.institution_id
+        );
+
+        if (!institutionExists) {
+          accidents[row.accident_id].institutions.push({
+            id: row.institution_id,
+            name: row.institution_name,
+            type: row.institution_type,
+            status: row.institution_status,
+          });
+        }
+      }
+
+      // Agregar imagen si existe
+      if (row.image_url && !accidents[row.accident_id].images.includes(row.image_url)) {
+        accidents[row.accident_id].images.push(row.image_url);
+      }
+    });
+
+    // Convertir el objeto de accidentes en un arreglo
+    res.status(200).json(Object.values(accidents));
+  } catch (error) {
+    console.error('Error al obtener reportes:', error);
+    res.status(500).json({ error: 'Error en el servidor' });
+  }
+});
+//captura el id
+app.get('/ReportsV/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const query = `
+      SELECT 
+        r.id AS accident_id,
+        r.description AS accident_description,
+        r.latitude AS accident_latitude,
+        r.longitude AS accident_longitude,
+        r.status AS accident_status,
+        r.audio AS accident_audio, -- Incluye audio
+        r.video AS accident_video, -- Incluye video
+        r."registerDate" AS accident_register_date,
+        r."lastUpdate" AS accident_last_update,
+        u.name AS user_name,
+        u.lastname AS user_lastname,
+        i.id AS institution_id,
+        i.name AS institution_name,
+        it.name AS institution_type, 
+        i.status AS institution_status,
+        img.url AS image_url
+      FROM public."Report" r
+      LEFT JOIN public."User" u ON r."idUser" = u.id
+      LEFT JOIN public."AssigmentAccident" aa ON r.id = aa."idReport"
+      LEFT JOIN public."Institution" i ON aa."idInstitution" = i.id
+      LEFT JOIN public."InstitutionType" it ON i."idInstitutionType" = it.id
+      LEFT JOIN public."Image" img ON img."idReport" = r.id
+      WHERE r.id = $1
+      ORDER BY r.id;
+    `;
+
+    const result = await pool.query(query, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Accidente no encontrado.' });
+    }
+
+    const accident = {
+      id: result.rows[0].accident_id,
+      description: result.rows[0].accident_description,
+      latitude: result.rows[0].accident_latitude,
+      longitude: result.rows[0].accident_longitude,
+      status: result.rows[0].accident_status,
+      audio: result.rows[0].accident_audio || null, // Agrega el audio
+      video: result.rows[0].accident_video || null, // Agrega el video
+      registerDate: result.rows[0].accident_register_date,
+      lastUpdate: result.rows[0].accident_last_update,
+      user: {
+        name: result.rows[0].user_name || null,
+        lastname: result.rows[0].user_lastname || null,
+      },
+      institutions: [],
+      images: [],
+    };
+
+    result.rows.forEach((row) => {
+      if (row.institution_id) {
+        const institutionExists = accident.institutions.some(
+          (inst) => inst.id === row.institution_id
+        );
+        if (!institutionExists) {
+          accident.institutions.push({
+            id: row.institution_id,
+            name: row.institution_name,
+            type: row.institution_type,
+            status: row.institution_status,
+          });
+        }
+      }
+
+      if (row.image_url && !accident.images.includes(row.image_url)) {
+        accident.images.push(row.image_url);
+      }
+    });
+
+    res.status(200).json(accident);
+  } catch (error) {
+    console.error('Error al obtener el accidente:', error);
+    res.status(500).json({ error: 'Error en el servidor.' });
+  }
+});
+// API para actualizar el estado del accidente
+app.put('/ReportsV/:id', async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  try {
+    const query = `
+      UPDATE public."Report"
+      SET status = $1, "lastUpdate" = NOW()
+      WHERE id = $2
+      RETURNING id, status, "lastUpdate";
+    `;
+    const result = await pool.query(query, [status, id]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Accidente no encontrado." });
+    }
+
+    res.status(200).json({
+      message: "Estado actualizado exitosamente.",
+      data: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Error al actualizar el estado del accidente:", error);
+    res.status(500).json({ error: "Error en el servidor." });
+  }
+});
+
+//asigana instituciones
+
+app.post('/assignInstitution', async (req, res) => {
+  const { idReport, institutions } = req.body;
+
+  console.log("Datos recibidos:", { idReport, institutions });
+
+  if (!idReport || !Array.isArray(institutions) || institutions.length === 0) {
+    return res.status(400).json({ error: 'idReport e institutions son obligatorios y deben ser válidos.' });
+  }
+
+  try {
+    // Valida primero que idReport exista
+    const reportExists = await pool.query(`SELECT id FROM public."Report" WHERE id = $1`, [idReport]);
+    if (reportExists.rowCount === 0) {
+      return res.status(400).json({ error: `El idReport ${idReport} no existe.` });
+    }
+
+    // Valida que todas las instituciones existan
+    const institutionCheckQuery = `
+      SELECT id FROM public."Institution" WHERE id = ANY($1::int[])
+    `;
+    const institutionsCheck = await pool.query(institutionCheckQuery, [institutions]);
+
+    if (institutionsCheck.rowCount !== institutions.length) {
+      return res.status(400).json({ error: 'Una o más instituciones no existen.' });
+    }
+
+    // Inserta los datos
+    const values = institutions.map(idInstitution => `(${idReport}, ${idInstitution}, 1, NOW(), NOW())`).join(',');
+    const query = `
+      INSERT INTO public."AssigmentAccident" ("idReport", "idInstitution", status, "registerDate", "lastUpdateDate")
+      VALUES ${values}
+      RETURNING *;
+    `;
+    const result = await pool.query(query);
+
+    res.status(201).json({
+      message: 'Instituciones asignadas exitosamente.',
+      assignments: result.rows,
+    });
+  } catch (error) {
+    console.error('Error al asignar las instituciones:', error);
+    res.status(500).json({ error: 'Error en el servidor.' });
+  }
+});
+
+
+
+//view institution 
+app.get('/institutionsView', async (req, res) => {
+  try {
+    const query = `
+       SELECT 
+        i.id AS institution_id,
+        i.name AS institution_name,
+        i.phone AS institution_phone,
+        i.address AS institution_address,
+        i.status AS institution_status,
+        c.name AS city_name,
+        it.name AS institution_type
+      FROM public."Institution" i
+      LEFT JOIN public."InstitutionType" it ON i."idInstitutionType" = it.id
+      LEFT JOIN public."County" c ON i."idCounty" = c.id
+    `;
+    const result = await pool.query(query);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('Error fetching institutions:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 //Set the API on the port 3005
 app.listen(3005, () => {
