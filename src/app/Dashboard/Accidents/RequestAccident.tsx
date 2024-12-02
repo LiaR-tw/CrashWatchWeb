@@ -75,6 +75,7 @@ const RequestAccident: React.FC<RequestAccidentProps> = ({ accidentId, onBack })
     return <div className="text-center text-lg font-semibold">Cargando...</div>;
   }
 
+
   const isEditable = accidentData.status === 1;
   const isFinalizable = accidentData.status === 2;
 
@@ -140,13 +141,19 @@ const RequestAccident: React.FC<RequestAccidentProps> = ({ accidentId, onBack })
         {/* Botones de Confirmar/Eliminar */}
         {isEditable && (
           <div className="flex space-x-4 mt-4">
-            <button
-              onClick={() => updateStatus(2)} // Confirmar cambia a status 2
-              className="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600"
-              disabled={isUpdating}
-            >
-              Confirmar
-            </button>
+
+          <button
+            onClick={async () => {
+              await updateStatus(2); // Actualiza el estado a 2
+              setCurrentView("institutions"); // Cambia la vista a "institutions"
+            }}
+            className="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600"
+            disabled={isUpdating}
+          >
+            Confirmar
+          </button>
+
+         
             <button
               onClick={() => openModal("delete")} // Abre el modal para eliminar
               className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600"
