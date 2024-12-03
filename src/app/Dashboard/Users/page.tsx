@@ -49,7 +49,9 @@ const UsersTable: React.FC = () => {
   
     fetchUsers();
   }, []);
-  const handleRegister = () => {};
+  const handleRegister = () => {
+    setCurrentView("usersTable"); // Cambia a UsersTable después del registro
+  };
 
   // Filtrar los usuarios según el valor seleccionado
   const filteredUsers = filter === "All" ? users : users.filter((user) => user.rol === filter);

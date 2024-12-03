@@ -191,7 +191,7 @@ app.post('/institutionTypes', async (req, res) => {
     const query = 'INSERT INTO "InstitutionType"(name) VALUES ($1) RETURNING *';
     const result = await pool.query(query, [name]);
 
-    res.status(201).json({
+    res.status(201).json({  
       message: 'InstitutionType creado exitosamente',
       rol: result.rows[0]
     });

@@ -64,30 +64,32 @@ const MapView: React.FC = () => {
   }, []);//eso es para institucion
   //es para acidentes
   useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        const response = await fetch("http://localhost:3005/ReportsAcidentes"); // Cambia la URL según corresponda
-        if (!response.ok) throw new Error("Failed to fetch reports.");
-        const data = await response.json();
+      const fetchReports = async () => {
+        try {
+          const response = await fetch("http://localhost:3005/ReportsAcidentes");
+          if (!response.ok) throw new Error("Failed to fetch reports.");
+          const data = await response.json();
+    
+          // Mapear los datos, asegurando que 'status' se capture como un número
+          const mappedReports = data.map((report: any) => ({
+            id: report.id,
+            reporter: `${report.user?.name || "Desconocido"} ${report.user?.lastname || ""}`,
+            institution: report.institutions?.[0]?.name || "Sin institución asignada",
+            location: `${report.latitude}, ${report.longitude}`,
+            time: report.registerDate,
+            accidentTypes: report.accidentTypes?.map((type: any) => type.name) || ["Sin tipo"],
+            status: typeof report.status === 'number' ? report.status : parseInt(report.status, 10) || 0 // Asegura que el status sea un número
+          }));
+    
+          setReports(mappedReports);
+        } catch (err) {
+          console.error("Error fetching reports:", err);
+          setError("Error al cargar los reportes.");
+        } finally {
+          setIsLoading(false);
+        }
+      };
 
-        // Mapear los datos para mostrar solo la información requerida
-        const mappedReports = data.map((report: any) => ({
-          id: report.id,
-          reporter: `${report.user?.name || "Desconocido"} ${report.user?.lastname || ""}`,
-          institution: report.institutions?.[0]?.name || "Sin institución asignada",
-          location: `${report.latitude}, ${report.longitude}`,
-          time: report.registerDate,
-          accidentTypes: report.accidentTypes?.map((type: any) => type.name) || ["Sin tipo"],
-        }));
-
-        setReports(mappedReports);
-      } catch (err) {
-        console.error("Error fetching reports:", err);
-        setError("Error al cargar los reportes.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
 
     fetchReports();
   }, []);
@@ -126,16 +128,16 @@ const MapView: React.FC = () => {
 
     <div className="absolute top-4 left-1/2 transform -translate-x-1/2 flex space-x-4 z-10">
             <button
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg"
+            className="bg-[#5932EA] text-white px-4 py-2 rounded-lg"
             onClick={() => handleButtonClick("institutions")}
           >
             Ver Instituciones
           </button>
           <button
-            className="bg-yellow-500 text-white px-4 py-2 rounded-lg"
+            className="bg-orange-500 text-white px-4 py-2 rounded-lg"
             onClick={() => handleButtonClick("accidents")}
           >
-            Ver Accidentes
+            Historial De Accidentes
           </button>
           <button
             className="bg-red-500 text-white px-4 py-2 rounded-lg"
@@ -167,10 +169,16 @@ const MapView: React.FC = () => {
                 />
               );
               })}
-              {/* Mostrar los marcadores de accidentes */}
-              {selectedData === "accidents" && reports.map((accident, index) => {
+           {selectedData === "accidents" && reports.map((accident, index) => {
+                // Verifica si el estado del accidente es "1"
+                if (accident.status !== 3) {
+                  return null; // Si el estado no es "1", no creas el marcador
+                }
+
+                // Divide la ubicación para obtener latitud y longitud
                 const [latitude, longitude] = accident.location.split(",").map(parseFloat);
 
+                // Verificar si las coordenadas son válidas
                 if (isNaN(latitude) || isNaN(longitude)) {
                   console.warn(`Invalid coordinates for accident at index ${index}: ${latitude}, ${longitude}`);
                   return null; // No crear el marcador si las coordenadas son inválidas
@@ -179,23 +187,24 @@ const MapView: React.FC = () => {
                 return (
                   <Marker
                     key={accident.id}
-                    position={{ lat: latitude, lng: longitude }}
+                    position={{ lat: latitude, lng: longitude }} // Usar las coordenadas del accidente
                     icon={{
                       path: google.maps.SymbolPath.CIRCLE,
-                      fillColor: "red",
+                      fillColor: "orange", 
                       fillOpacity: 0.8,
                       strokeColor: "white",
                       strokeWeight: 2,
-                      scale: 6,
+                      scale:10,
                     }}
                     onClick={() => alert(`Accidente: ${accident.accidentTypes.join(", ")}, Reportado por: ${accident.reporter}`)}
                   />
                 );
               })}
+
                {/* Mostrar los marcadores de accidentes */}
             {selectedData === "ongoingAccidents" && reports.map((accident, index) => {
                 // Verifica si el estado del accidente es "1"
-                if (accident.status !== 1) {
+                if (accident.status !== 2) {
                   return null; // Si el estado no es "1", no creas el marcador
                 }
 
@@ -218,7 +227,7 @@ const MapView: React.FC = () => {
                       fillOpacity: 0.8,
                       strokeColor: "white",
                       strokeWeight: 2,
-                      scale: 6,
+                      scale:30,
                     }}
                     onClick={() => alert(`Accidente: ${accident.accidentTypes.join(", ")}, Reportado por: ${accident.reporter}`)}
                   />
@@ -247,21 +256,22 @@ const MapView: React.FC = () => {
       </GoogleMap>
     </LoadScript>
 
-          <div className="mt-4 p-4 bg-gray-100 rounded-lg shadow-lg">
+            <div className="mt-4 p-4 bg-gray-100 rounded-lg shadow-lg">
           <h2 className="text-xl font-bold">Lista de Accidentes</h2>
           <ul className="list-none space-y-2 mt-2">
             {reports.map((report) => (
               <li key={report.id} className="p-2 bg-white rounded-lg shadow hover:bg-gray-200">
                 <p><strong>Reportado por:</strong> {report.reporter}</p>
                 <p><strong>Institución:</strong> {report.institution}</p>
-                <p><strong>ubcacion:</strong> {report.location}</p>
-
-                <p><strong>Fecha:</strong> {report.time}</p>
-                <p><strong>Tipos de Accidente:</strong> {report.accidentTypes.join(', ')}</p>
+                <p><strong>Ubicación:</strong> {report.location}</p>
+                <p><strong>Hora:</strong> {report.time}</p>
+                <p><strong>Tipos de accidente:</strong> {report.accidentTypes.join(', ')}</p>
+                <p><strong>Estado:</strong> {report.status === 1 ? 'Activo' : report.status === 2 ? 'Resuelto' : 'Desconocido'}</p> {/* Ejemplo de traducción de status */}
               </li>
             ))}
           </ul>
         </div>
+
         </div>
   );
 };

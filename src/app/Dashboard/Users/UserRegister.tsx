@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { GoogleMap, Marker } from "@react-google-maps/api";
+import UsersTable from "./page";
 type County = {
   id: string;
   name: string;
@@ -13,6 +14,7 @@ type Role = {
 };
 
 function RegisterForm({ onRegister }: { onRegister: () => void }) {
+  
   const [counties, setCounties] = useState<County[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [formData, setFormData] = useState({
@@ -96,6 +98,7 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
       console.log("User registered:", data);
 
       onRegister();
+      
     } catch (error) {
       console.error("Error registering user:", error);
     }
@@ -289,7 +292,7 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
               ))}
             </select>
           </div>
-
+         
           <button
             type="submit"
             className="w-full mt-6 py-3 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all"
