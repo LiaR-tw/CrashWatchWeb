@@ -17,6 +17,7 @@ type Accident = {
   location: string;
   time: string;
   accidentTypes: string[];
+  status:number;
 };
 
 
@@ -167,9 +168,7 @@ const MapView: React.FC = () => {
               );
               })}
               {/* Mostrar los marcadores de accidentes */}
-        
-             
-        {/*      {selectedData === "accidents" && accidents.map((accident, index) => {
+              {selectedData === "accidents" && reports.map((accident, index) => {
                 const [latitude, longitude] = accident.location.split(",").map(parseFloat);
 
                 if (isNaN(latitude) || isNaN(longitude)) {
@@ -192,7 +191,41 @@ const MapView: React.FC = () => {
                     onClick={() => alert(`Accidente: ${accident.accidentTypes.join(", ")}, Reportado por: ${accident.reporter}`)}
                   />
                 );
-              })}  */}
+              })}
+               {/* Mostrar los marcadores de accidentes */}
+            {selectedData === "ongoingAccidents" && reports.map((accident, index) => {
+                // Verifica si el estado del accidente es "1"
+                if (accident.status !== 1) {
+                  return null; // Si el estado no es "1", no creas el marcador
+                }
+
+                // Divide la ubicación para obtener latitud y longitud
+                const [latitude, longitude] = accident.location.split(",").map(parseFloat);
+
+                // Verificar si las coordenadas son válidas
+                if (isNaN(latitude) || isNaN(longitude)) {
+                  console.warn(`Invalid coordinates for accident at index ${index}: ${latitude}, ${longitude}`);
+                  return null; // No crear el marcador si las coordenadas son inválidas
+                }
+
+                return (
+                  <Marker
+                    key={accident.id}
+                    position={{ lat: latitude, lng: longitude }} // Usar las coordenadas del accidente
+                    icon={{
+                      path: google.maps.SymbolPath.CIRCLE,
+                      fillColor: "red", 
+                      fillOpacity: 0.8,
+                      strokeColor: "white",
+                      strokeWeight: 2,
+                      scale: 6,
+                    }}
+                    onClick={() => alert(`Accidente: ${accident.accidentTypes.join(", ")}, Reportado por: ${accident.reporter}`)}
+                  />
+                );
+              })}
+
+        {/*      */}
         {selectedMarker && (
       <InfoWindow
       position={{
