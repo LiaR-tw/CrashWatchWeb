@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-
+import React, { useState, useEffect, useCallback } from "react";
+import { GoogleMap, Marker } from "@react-google-maps/api";
 type County = {
   id: string;
   name: string;
@@ -23,12 +23,27 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
     phone: "",
     username: "",
     password: "",
-    status: "",
+    status: "1", // Valor por defecto
     latitude: "",
     longitude: "",
     idCounty: "",
     idRol: "",
   });
+
+  const [center, setCenter] = useState({ lat: -17.38333333, lng: -66.16666667 });
+
+  const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
+    const lat = e.latLng?.lat() || 0;
+    const lng = e.latLng?.lng() || 0;
+
+    setFormData(prevFormData => ({
+      ...prevFormData,
+      latitude: lat.toString(),
+      longitude: lng.toString(),
+    }));
+
+    setCenter({ lat, lng });
+  }, []);
 
   // Obtener los países y roles desde la API
   useEffect(() => {
@@ -36,7 +51,7 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
       try {
         const countyResponse = await fetch("http://localhost:3005/counties");
         const roleResponse = await fetch("http://localhost:3005/roles");
-        
+
         if (!countyResponse.ok || !roleResponse.ok) {
           throw new Error("Failed to fetch counties or roles.");
         }
@@ -65,13 +80,12 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Realizar la llamada POST al servidor para registrar al usuario
       const response = await fetch("http://localhost:3005/users", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData), // Pasamos los datos del formulario
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
@@ -86,7 +100,6 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
       console.error("Error registering user:", error);
     }
   };
-
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-white p-6">
@@ -203,36 +216,39 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="latitude" className="block text-gray-800 font-medium">
-                Latitude
-              </label>
-              <input
-                id="latitude"
-                name="latitude"
-                type="number"
-                placeholder="Enter Latitude"
-                value={formData.latitude}
-                onChange={handleChange}
-                className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm transition-all"
-              />
-            </div>
-            <div>
-              <label htmlFor="longitude" className="block text-gray-800 font-medium">
-                Longitude
-              </label>
-              <input
-                id="longitude"
-                name="longitude"
-                type="number"
-                placeholder="Enter Longitude"
-                value={formData.longitude}
-                onChange={handleChange}
-                className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm transition-all"
-              />
-            </div>
-          </div>
+        
+          <h3>Select Location</h3>
+    
+        <GoogleMap
+          mapContainerStyle={{ width: "100%", height: "400px" }}
+          center={center}
+          zoom={12}
+          onClick={handleMapClick} // Correctly passing the onClick handler
+        >
+          <Marker position={center} />
+        </GoogleMap>
+      
+
+      <div>
+        <label htmlFor="latitude">Latitude</label>
+        <input
+          id="latitude"
+          type="text"
+          value={formData.latitude}
+          readOnly
+        />
+      </div>
+
+      <div>
+        <label htmlFor="longitude">Longitude</label>
+        <input
+          id="longitude"
+          type="text"
+          value={formData.longitude}
+          readOnly
+        />
+      </div>
+        
 
           <div>
             <label htmlFor="idCounty" className="block text-gray-800 font-medium">

@@ -129,6 +129,35 @@ app.delete('/roles/:id', async (req, res) => {
   });
 
 // CRUD INSTITUTIONTYPE
+//institucionselecde ambas
+app.get('/institutionsTypeG', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        i.name, 
+        i.description, 
+        i.phone, 
+        i.address, 
+        i.latitude, 
+        i.longitude, 
+        i.status, 
+        it.name AS type, 
+        c.name AS county
+      FROM 
+        "Institution" i
+      INNER JOIN 
+        "InstitutionType" it ON it.id = i."idInstitutionType"
+      INNER JOIN 
+        "County" c ON c.id = i."idCounty"
+      WHERE 
+        i.status = 1
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching Institutions:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 app.get('/institutionTypes', async (req, res) => {
     try {
@@ -202,17 +231,17 @@ app.put('/institutionTypes/:id', async (req, res) => {
 
 //INSTITUTION CRUD
 
-app.get('/institutions', async (req, res) => {
-    try {
-      const result = await pool.query(`SELECT name, description, phone, address, latitude, longitude, status, 
-                                     (SELECT name FROM "InstitutionType" WHERE "InstitutionType".id = "Institution"."idInstitutionType") AS type,
-                                     (SELECT name FROM "County" WHERE "County".id = "Institution"."idCounty")AS county FROM "Institution"`);
-      res.json(result.rows);
-    } catch (error) {
-      console.error('Error fetching Institutions:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
-  });
+  app.get('/institutions', async (req, res) => {
+      try {
+        const result = await pool.query(`SELECT name, description, phone, address, latitude, longitude, status, 
+                                      (SELECT name FROM "InstitutionType" WHERE "InstitutionType".id = "Institution"."idInstitutionType") AS type,
+                                      (SELECT name FROM "County" WHERE "County".id = "Institution"."idCounty")AS county FROM "Institution"`);
+        res.json(result.rows);
+      } catch (error) {
+        console.error('Error fetching Institutions:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+      }
+    });
   
   app.get('/institutions/:id', async (req, res) => {
     const  {id}  = req.params;

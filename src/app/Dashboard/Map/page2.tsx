@@ -1,133 +1,170 @@
-/*import React, { useState, useEffect, useRef } from "react";
-import InstitutionsTable from "./InstitutionsTable";
+import React, { useEffect, useRef, useState } from "react";
 
-function RegisterForm({ onRegister }: { onRegister: () => void }) {
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    phone: "",
-    address: "",
-    latitude: "",
-    longitude: "",
-    status: "",
-    idInstitutionType: "", // Default value
-    idCounty: "", // Will be set from dynamic data
-  });
+type Institution = {
+  name: string;
+  latitude: number;
+  longitude: number;
+  type: string;
+};
 
-  const [counties, setCounties] = useState<{ id: string; name: string }[]>([]);
-  const [institutionTypesAvailable, setInstitutionTypesAvailable] = useState<{ id: string; name: string }[]>([]);
+const accessToken =
+  "DQEDACk4MlhnmOmdmSVkBNDeJZ6qPhCndg2EUV5ihtAlqHuAbdy5dIY7wfMhlkZZXQc9Z8nFXfWaT3zoZ2pTOsC8soZE8pYPcSOnBQ==";
+
+const MapView: React.FC = () => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [types, setTypes] = useState<string[]>([]);
 
-  // Fetch counties data (example of dynamic data for the select)
+  const fetchData = async () => {
+    setIsLoading(true);
+
+    try {
+      // Obtener instituciones
+      const institutionsResponse = await fetch("http://localhost:3005/institutions");
+      if (!institutionsResponse.ok) throw new Error("Failed to fetch institutions.");
+      const institutionsData = await institutionsResponse.json();
+      if (Array.isArray(institutionsData)) {
+        const mappedInstitutions = institutionsData.map((institution) => ({
+          latitude: institution.latitude,
+          longitude: institution.longitude,
+          name: institution.name,
+          type: institution.type,
+        }));
+        setInstitutions(mappedInstitutions);
+      }
+
+      // Obtener tipos de institución
+      const typesResponse = await fetch("http://localhost:3005/institutionTypes");
+      if (!typesResponse.ok) throw new Error("Failed to fetch institution types.");
+      const typesData = await typesResponse.json();
+      if (Array.isArray(typesData)) {
+        const typeNames = typesData.map((type: { name: string }) => type.name);
+        setTypes(typeNames);
+      } else {
+        console.error("Datos inesperados:", typesData);
+      }
+
+      setLoadError(null);
+    } catch (err) {
+      console.error(err);
+      setLoadError("Error al cargar los datos.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchCounties = async () => {
-      const response = await fetch("http://localhost:3005/counties"); // Replace with actual API endpoint
-      const data = await response.json();
-      setCounties(data);
-    };
-    fetchCounties();
+    fetchData();
   }, []);
-
-  useEffect(() => {
-    const fetchInstitutionTypes = async () => {
-      const response = await fetch("http://localhost:3005/institutionTypes"); // Replace with actual API endpoint
-      const data = await response.json();
-      setInstitutionTypesAvailable(data);
-    };
-    fetchInstitutionTypes();
-  }, []);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setFormData((prev) => ({ ...prev, [id]: value }));
-  };
-
-  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const { id, value } = e.target;
-    setFormData((prev) => ({ ...prev, [id]: value }));
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-  };
-
-  // Maneja el evento de cuando el marcador se arrastra (dragend)
-  const handleMarkerDragEnd = (event: any) => {
-    const lat = event.latLng ? event.latLng.lat() : 0;
-    const lng = event.latLng ? event.latLng.lng() : 0;
-
-    // Actualiza las coordenadas en el estado
-    setFormData((prev) => ({
-      ...prev,
-      latitude: lat.toString(),
-      longitude: lng.toString(),
-    }));
-  };
 
   const initMap = () => {
     if (mapInstanceRef.current || !window.HWMapJsSDK || !mapContainerRef.current) {
+      console.log("El mapa ya está inicializado o el SDK no está disponible.");
       return;
     }
-
+  
     const mapOptions = {
       center: { lat: -17.38333333, lng: -66.16666667 },
       zoom: 8,
       language: "ENG",
       sourceType: "raster",
-      authOptions: { accessToken: "DQEDACk4MlhnmOmdmSVkBNDeJZ6qPhCndg2EUV5ihtAlqHuAbdy5dIY7wfMhlkZZXQc9Z8nFXfWaT3zoZ2pTOsC8soZE8pYPcSOnBQ" },
+      authOptions: { accessToken },
     };
-
-    mapInstanceRef.current = new window.HWMapJsSDK.HWMap(
-      mapContainerRef.current,
-      mapOptions
-    );
-
-    // Verifica que el mapa se haya creado correctamente antes de agregar el listener
-    if (mapInstanceRef.current) {
-      markerRef.current = new window.HWMapJsSDK.HWMarker({
-        map: mapInstanceRef.current,
-        position: {
-          lat: parseFloat(formData.latitude || "-17.38333333"),
-          lng: parseFloat(formData.longitude || "-66.16666667"),
-        },
-        draggable: true,
-        zIndex: 10,
+  
+    try {
+      // Inicializa el mapa
+      mapInstanceRef.current = new window.HWMapJsSDK.HWMap(
+        mapContainerRef.current,
+        mapOptions
+      );
+      console.log("Mapa inicializado correctamente.");
+  
+      // Lógica para asignar un icono según el tipo de institución
+      institutions.forEach((institution) => {
+        if (institution.latitude && institution.longitude) {
+          console.log(
+            `Marcador para ${institution.name} en lat: ${institution.latitude}, lng: ${institution.longitude}`
+          );
+  
+          // Determina el icono en base al tipo de institución
+          let iconUrl = "/Images/Icons/Default.png"; // Icono por defecto
+  
+          switch (institution.type) {
+            case "Hospital":
+              iconUrl = "/Images/Icons/Hospital.png";
+              break;
+            case "Fire Fighters":
+              iconUrl = "/Images/Icons/Firefighter.png";
+              break;
+            case "Transit":
+              iconUrl = "/Images/Icons/Transit.png";
+              break;
+            case "Police":
+              iconUrl = "/Images/Icons/Police.png";
+              break;
+            default:
+              console.warn(`Tipo de institución desconocido: ${institution.type}`);
+          }
+  
+          // Crear un marcador con el icono correspondiente
+          new window.HWMapJsSDK.HWMarker({
+            map: mapInstanceRef.current,
+            position: { lat: institution.latitude, lng: institution.longitude },
+            zIndex: 10,
+            label: {
+              text: `${institution.name} (${institution.type})`,
+              offsetY: -40,
+              fontSize: "14px",
+            },
+            icon: {
+              scale: 0.1,
+              url: iconUrl, // Usar el icono dinámico
+            },
+            infoWindow: {
+              content: `<h4>${institution.name}</h4><p>Type: ${institution.type}</p>`,
+            },
+          });
+        } else {
+          console.error(
+            `Coordenadas no válidas o institución inactiva para ${institution.name}`
+          );
+        }
       });
-
-      // Agrega el listener para el evento dragend del marcador
-      window.HWMapJsSDK.event.addListener(markerRef.current, "dragend", handleMarkerDragEnd);
-    } else {
-      console.error("Map instance is not initialized correctly.");
+    } catch (error) {
+      console.error("Error al inicializar el mapa:", error);
+      setLoadError("Error al inicializar el mapa.");
     }
   };
 
   useEffect(() => {
-    const scriptSrc = `https://mapapi.cloud.huawei.com/mapjs/v1/api/js?key=DQEDACk4MlhnmOmdmSVkBNDeJZ6qPhCndg2EUV5ihtAlqHuAbdy5dIY7wfMhlkZZXQc9Z8nFXfWaT3zoZ2pTOsC8soZE8pYPcSOnBQ&callback=initMap`;
+    const scriptSrc = `https://mapapi.cloud.huawei.com/mapjs/v1/api/js?key=${accessToken}&callback=initMap`;
 
     const loadScript = () => {
       const existingScript = document.querySelector(`script[src="${scriptSrc}"]`);
       if (existingScript) {
-        (window as any).initMap = initMap;
+        console.log("El SDK ya está cargado, inicializando el mapa...");
+        (window as any).initMap = initMap; // Callback para el SDK
+        if (institutions.length > 0) {
+          initMap(); // Solo inicializa el mapa cuando las instituciones estén cargadas
+        }
         return;
       }
 
       const script = document.createElement("script");
       script.src = scriptSrc;
       script.async = true;
-      (window as any).initMap = initMap;
 
-      script.onload = () => {
+      (window as any).initMap = () => {
+        setIsLoaded(true);
         initMap();
       };
-      script.onerror = () => {
-        console.error("Error loading map SDK.");
-      };
+
+      script.onload = () => console.log("Script cargado correctamente.");
+      script.onerror = () => setLoadError("Error al cargar el SDK de Huawei Maps.");
 
       document.head.appendChild(script);
     };
@@ -135,223 +172,63 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
     loadScript();
 
     return () => {
-      // Limpieza del mapa
       if (mapInstanceRef.current) {
-        window.HWMapJsSDK.event.removeListener(markerRef.current, "dragend", handleMarkerDragEnd);
-        mapInstanceRef.current.destroy();
+        console.log("Desmontando mapa y limpiando instancia.");
+        mapInstanceRef.current.destroy?.(); // Método destroy si está disponible
+        mapInstanceRef.current = null;
       }
+
       delete (window as any).initMap;
     };
-  }, [formData.latitude, formData.longitude]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Prepare the data for the POST request
-    const payload = {
-      name: formData.name,
-      description: formData.description,
-      phone: formData.phone,
-      address: formData.address,
-      latitude: formData.latitude,
-      longitude: formData.longitude,
-      status: formData.status,
-      idInstitutionType: formData.idInstitutionType,
-      idCounty: formData.idCounty,
-    };
-
-    // Send POST request to the server to register the institution
-    try {
-      const response = await fetch("http://localhost:3005/institutions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        console.log("Institution registered successfully");
-        onRegister(); // Call the onRegister function after successful submission
-      } else {
-        console.error("Failed to register institution");
-      }
-    } catch (error) {
-      console.error("Error during the registration process:", error);
-    }
-  };
+  }, [institutions]); // Dependencia a institutions para asegurarnos de que se inicialice cuando lleguen los datos
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-white p-6">
-      <div className="bg-white shadow-2xl rounded-lg p-8 max-w-lg w-full border border-gray-200">
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Institutional Register</h1>
-          <p className="text-gray-600 text-sm mt-2">Fill in the details to register your institution.</p>
+    <div style={{ display: "flex", justifyContent: "center", height: "75vh", width: "100%" }}>
+      {loadError ? (
+        <p style={{ color: "red" }}>{loadError}</p>
+      ) : (
+        <div
+          ref={mapContainerRef}
+          style={{
+            height: "100%",
+            width: "100%",
+            border: "1px solid #ccc",
+          }}
+        >
+          {isLoading && <p>Cargando...</p>}
         </div>
+      )}
 
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="name" className="block text-gray-800 font-medium">
-              Institutional Name
-            </label>
-            <input
-              id="name"
-              type="text"
-              value={formData.name}
-              onChange={handleInputChange}
-              placeholder="Enter institution name"
-              className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm transition-all"
-            />
-          </div>
+      {/* Listado de Instituciones y Tipos */}
+      <div style={{ marginTop: "20px" }}>
+        <h3>Instituciones Cargadas:</h3>
+        <ul>
+          {institutions.length > 0 ? (
+            institutions.map((institution, index) => (
+              <li key={index}>
+                <strong>{institution.name}</strong><br />
+                Tipo: {institution.type}<br />
+                Coordenadas: ({institution.latitude}, {institution.longitude})<br />
+              </li>
+            ))
+          ) : (
+            <li>No se han cargado instituciones.</li>
+          )}
+        </ul>
 
-          <div>
-            <label htmlFor="description" className="block text-gray-800 font-medium">
-              Description
-            </label>
-            <input
-              id="description"
-              type="text"
-              value={formData.description}
-              onChange={handleInputChange}
-              placeholder="Enter institution description"
-              className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm transition-all"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="phone" className="block text-gray-800 font-medium">
-              Phone
-            </label>
-            <input
-              id="phone"
-              type="number"
-              value={formData.phone}
-              onChange={handleInputChange}
-              placeholder="Enter institution phone"
-              className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm transition-all"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="address" className="block text-gray-800 font-medium">
-              Address
-            </label>
-            <input
-              id="address"
-              type="text"
-              value={formData.address}
-              onChange={handleInputChange}
-              placeholder="Enter institution address"
-              className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm transition-all"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="latitude" className="block text-gray-800 font-medium">
-                Latitude
-              </label>
-              <input
-                id="latitude"
-                type="text"
-                value={formData.latitude}
-                onChange={handleInputChange}
-                className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm transition-all"
-                disabled
-              />
-            </div>
-            <div>
-              <label htmlFor="longitude" className="block text-gray-800 font-medium">
-                Longitude
-              </label>
-              <input
-                id="longitude"
-                type="text"
-                value={formData.longitude}
-                onChange={handleInputChange}
-                className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm transition-all"
-                disabled
-              />
-            </div>
-          </div>
-          
-          <div ref={mapContainerRef} style={{ height: "300px", marginTop: "20px" }}></div>
-
-          <div>
-            <label htmlFor="status" className="block text-gray-800 font-medium">
-              Status
-            </label>
-            <input
-              id="status"
-              type="number"
-              value={formData.status}
-              onChange={handleInputChange}
-              placeholder="Enter status"
-              className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm transition-all"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="idInstitutionType" className="block text-gray-800 font-medium">
-              Institution Type
-            </label>
-            <select
-              id="idInstitutionType"
-              value={formData.idInstitutionType}
-              onChange={handleSelectChange}
-              className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm transition-all"
-            >
-              <option value="">Select Institution Type</option>
-              {institutionTypesAvailable.map((type) => (
-                <option key={type.id} value={type.id}>
-                  {type.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="idCounty" className="block text-gray-800 font-medium">
-              County
-            </label>
-            <select
-              id="idCounty"
-              name="idCounty"
-              value={formData.idCounty}
-              onChange={handleChange}
-              className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm transition-all"
-            >
-              <option value="">Select County</option>
-              {counties.map((county) => (
-                <option key={county.id} value={county.id}>
-                  {county.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-[#5932EA] text-white py-3 rounded-lg hover:bg-purple-700 transition-all shadow-lg hover:shadow-xl"
-          >
-            Register
-          </button>
-        </form>
+        <h3>Tipos de Instituciones:</h3>
+        <ul>
+          {types.length > 0 ? (
+            types.map((type, index) => (
+              <li key={index}>{type}</li>
+            ))
+          ) : (
+            <li>No se han cargado tipos de instituciones.</li>
+          )}
+        </ul>
       </div>
     </div>
   );
-}
+};
 
-export default function Register() {
-  const [currentView, setCurrentView] = useState<"register" | "institutions">("register");
-
-  return (
-    <div>
-      {currentView === "register" ? (
-        <RegisterForm onRegister={() => setCurrentView("institutions")} />
-      ) : (
-        <InstitutionsTable />
-      )}
-    </div>
-  );
-}*/
+export default MapView;

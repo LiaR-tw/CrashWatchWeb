@@ -1,233 +1,235 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import { GoogleMap, LoadScript, Marker, InfoWindow } from "@react-google-maps/api";
 
 type Institution = {
   name: string;
   latitude: number;
   longitude: number;
+  description: string;
+  phone: string;
   type: string;
+  county: string;
+};
+type Accident = {
+  id: number;
+  reporter: string;
+  institution: string | null;
+  location: string;
+  time: string;
+  accidentTypes: string[];
 };
 
-const accessToken =
-  "DQEDACk4MlhnmOmdmSVkBNDeJZ6qPhCndg2EUV5ihtAlqHuAbdy5dIY7wfMhlkZZXQc9Z8nFXfWaT3zoZ2pTOsC8soZE8pYPcSOnBQ==";
+
 
 const MapView: React.FC = () => {
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [types, setTypes] = useState<string[]>([]);
+  const [center, setCenter] = useState({ lat: -17.38333333, lng: -66.16666667 });
+  const [selectedMarker, setSelectedMarker] = useState<Institution | null>(null);
 
+
+  const [selectedData, setSelectedData] = useState<"institutions" | "accidents" | "ongoingAccidents">("institutions");
+
+  const [reports, setReports] = useState<Accident[]>([]);
+
+  const [error, setError] = useState<string | null>(null);
+
+  // Callback para manejar el clic en el mapa
+  const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
+    const lat = e.latLng?.lat() || 0;
+    const lng = e.latLng?.lng() || 0;
+    setCenter({ lat, lng });
+  }, []);
+
+  // Función para obtener las instituciones
   const fetchData = async () => {
     setIsLoading(true);
 
     try {
-      // Obtener instituciones
-      const institutionsResponse = await fetch("http://localhost:3005/institutions");
+      const institutionsResponse = await fetch("http://localhost:3005/institutionsTypeG");
       if (!institutionsResponse.ok) throw new Error("Failed to fetch institutions.");
       const institutionsData = await institutionsResponse.json();
       if (Array.isArray(institutionsData)) {
-        const mappedInstitutions = institutionsData.map((institution) => ({
-          latitude: institution.latitude,
-          longitude: institution.longitude,
-          name: institution.name,
-          type: institution.type,
-        }));
-        setInstitutions(mappedInstitutions);
+        setInstitutions(institutionsData);
       }
-
-      // Obtener tipos de institución
-      const typesResponse = await fetch("http://localhost:3005/institutionTypes");
-      if (!typesResponse.ok) throw new Error("Failed to fetch institution types.");
-      const typesData = await typesResponse.json();
-      if (Array.isArray(typesData)) {
-        const typeNames = typesData.map((type: { name: string }) => type.name);
-        setTypes(typeNames);
-      } else {
-        console.error("Datos inesperados:", typesData);
-      }
-
-      setLoadError(null);
-    } catch (err) {
-      console.error(err);
-      setLoadError("Error al cargar los datos.");
-    } finally {
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error fetching institutions:", error);
       setIsLoading(false);
     }
   };
-
   useEffect(() => {
     fetchData();
+  }, []);//eso es para institucion
+  //es para acidentes
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const response = await fetch("http://localhost:3005/ReportsAcidentes"); // Cambia la URL según corresponda
+        if (!response.ok) throw new Error("Failed to fetch reports.");
+        const data = await response.json();
+
+        // Mapear los datos para mostrar solo la información requerida
+        const mappedReports = data.map((report: any) => ({
+          id: report.id,
+          reporter: `${report.user?.name || "Desconocido"} ${report.user?.lastname || ""}`,
+          institution: report.institutions?.[0]?.name || "Sin institución asignada",
+          location: `${report.latitude}, ${report.longitude}`,
+          time: report.registerDate,
+          accidentTypes: report.accidentTypes?.map((type: any) => type.name) || ["Sin tipo"],
+        }));
+
+        setReports(mappedReports);
+      } catch (err) {
+        console.error("Error fetching reports:", err);
+        setError("Error al cargar los reportes.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchReports();
   }, []);
 
-  const initMap = () => {
-    if (mapInstanceRef.current || !window.HWMapJsSDK || !mapContainerRef.current) {
-      console.log("El mapa ya está inicializado o el SDK no está disponible.");
-      return;
-    }
-  
-    const mapOptions = {
-      center: { lat: -17.38333333, lng: -66.16666667 },
-      zoom: 8,
-      language: "ENG",
-      sourceType: "raster",
-      authOptions: { accessToken },
-    };
-  
-    try {
-      // Inicializa el mapa
-      mapInstanceRef.current = new window.HWMapJsSDK.HWMap(
-        mapContainerRef.current,
-        mapOptions
-      );
-      console.log("Mapa inicializado correctamente.");
-  
-      // Lógica para asignar un icono según el tipo de institución
-      institutions.forEach((institution) => {
-        if (institution.latitude && institution.longitude) {
-          console.log(
-            `Marcador para ${institution.name} en lat: ${institution.latitude}, lng: ${institution.longitude}`
-          );
-  
-          // Determina el icono en base al tipo de institución
-          let iconUrl = "/Images/Icons/Default.png"; // Icono por defecto
-  
-          switch (institution.type) {
-            case "Hospital":
-              iconUrl = "/Images/Icons/Hospital.png";
-              break;
-            case "Fire Fighters":
-              iconUrl = "/Images/Icons/Firefighter.png";
-              break;
-            case "Transit":
-              iconUrl = "/Images/Icons/Transit.png";
-              break;
-            case "Police":
-              iconUrl = "/Images/Icons/Police.png";
-              break;
-            default:
-              console.warn(`Tipo de institución desconocido: ${institution.type}`);
-          }
-  
-          // Crear un marcador con el icono correspondiente
-          new window.HWMapJsSDK.HWMarker({
-            map: mapInstanceRef.current,
-            position: { lat: institution.latitude, lng: institution.longitude },
-            zIndex: 10,
-            label: {
-              text: `${institution.name} (${institution.type})`,
-              offsetY: -40,
-              fontSize: "14px",
-            },
-            icon: {
-              scale: 0.1,
-              url: iconUrl, // Usar el icono dinámico
-            },
-            infoWindow: {
-              content: `<h4>${institution.name}</h4><p>Type: ${institution.type}</p>`,
-            },
-          });
-        } else {
-          console.error(
-            `Coordenadas no válidas o institución inactiva para ${institution.name}`
-          );
-        }
-      });
-    } catch (error) {
-      console.error("Error al inicializar el mapa:", error);
-      setLoadError("Error al inicializar el mapa.");
+
+
+  // Función para obtener la URL del ícono en función del tipo de institución
+  const getIconUrl = (type: string) => {
+    switch (type) {
+      case "Hospital":
+        return "/Images/Icons/Hospital.png";
+      case "Fire Fighters":
+        return "/Images/Icons/Firefighter.png";
+      case "Transit":
+        return "/Images/Icons/Transit.png";
+      case "Police":
+        return "/Images/Icons/Police.png";
+      default:
+        return "/Images/Icons/Default.png";
     }
   };
 
-  useEffect(() => {
-    const scriptSrc = `https://mapapi.cloud.huawei.com/mapjs/v1/api/js?key=${accessToken}&callback=initMap`;
+  // Manejar el clic en un marcador para seleccionar el marcador y mostrar la InfoWindow
+  const handleMarkerClick = (institution: Institution) => {
+    setSelectedMarker(institution);
+  };
+  const handleButtonClick = (dataType: "institutions" | "accidents" | "ongoingAccidents") => {
+    setSelectedData(dataType);
+    setSelectedMarker(null); // Resetea el marcador seleccionado
+  };
 
-    const loadScript = () => {
-      const existingScript = document.querySelector(`script[src="${scriptSrc}"]`);
-      if (existingScript) {
-        console.log("El SDK ya está cargado, inicializando el mapa...");
-        (window as any).initMap = initMap; // Callback para el SDK
-        if (institutions.length > 0) {
-          initMap(); // Solo inicializa el mapa cuando las instituciones estén cargadas
-        }
-        return;
-      }
 
-      const script = document.createElement("script");
-      script.src = scriptSrc;
-      script.async = true;
-
-      (window as any).initMap = () => {
-        setIsLoaded(true);
-        initMap();
-      };
-
-      script.onload = () => console.log("Script cargado correctamente.");
-      script.onerror = () => setLoadError("Error al cargar el SDK de Huawei Maps.");
-
-      document.head.appendChild(script);
-    };
-
-    loadScript();
-
-    return () => {
-      if (mapInstanceRef.current) {
-        console.log("Desmontando mapa y limpiando instancia.");
-        mapInstanceRef.current.destroy?.(); // Método destroy si está disponible
-        mapInstanceRef.current = null;
-      }
-
-      delete (window as any).initMap;
-    };
-  }, [institutions]); // Dependencia a institutions para asegurarnos de que se inicialice cuando lleguen los datos
-
+  
   return (
-    <div style={{ display: "flex", justifyContent: "center", height: "75vh", width: "100%" }}>
-      {loadError ? (
-        <p style={{ color: "red" }}>{loadError}</p>
-      ) : (
-        <div
-          ref={mapContainerRef}
-          style={{
-            height: "100%",
-            width: "100%",
-            border: "1px solid #ccc",
-          }}
-        >
-          {isLoading && <p>Cargando...</p>}
-        </div>
-      )}
+    <div className="relative">
 
-      {/* Listado de Instituciones y Tipos */}
-      <div style={{ marginTop: "20px" }}>
-        <h3>Instituciones Cargadas:</h3>
-        <ul>
-          {institutions.length > 0 ? (
-            institutions.map((institution, index) => (
-              <li key={index}>
-                <strong>{institution.name}</strong><br />
-                Tipo: {institution.type}<br />
-                Coordenadas: ({institution.latitude}, {institution.longitude})<br />
-              </li>
-            ))
-          ) : (
-            <li>No se han cargado instituciones.</li>
-          )}
-        </ul>
-
-        <h3>Tipos de Instituciones:</h3>
-        <ul>
-          {types.length > 0 ? (
-            types.map((type, index) => (
-              <li key={index}>{type}</li>
-            ))
-          ) : (
-            <li>No se han cargado tipos de instituciones.</li>
-          )}
-        </ul>
-      </div>
+    <div className="absolute top-4 left-1/2 transform -translate-x-1/2 flex space-x-4 z-10">
+            <button
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg"
+            onClick={() => handleButtonClick("institutions")}
+          >
+            Ver Instituciones
+          </button>
+          <button
+            className="bg-yellow-500 text-white px-4 py-2 rounded-lg"
+            onClick={() => handleButtonClick("accidents")}
+          >
+            Ver Accidentes
+          </button>
+          <button
+            className="bg-red-500 text-white px-4 py-2 rounded-lg"
+            onClick={() => handleButtonClick("ongoingAccidents")}
+          >
+            Ver Accidentes en Curso
+          </button>
     </div>
+
+            <LoadScript googleMapsApiKey="AIzaSyClUE7K-Ytz6duQ6wLYFDNNSJyQSnFFgks">
+              <GoogleMap
+                mapContainerStyle={{ width: "100%", height: "100vh" }}
+                center={center}
+                zoom={15}
+                onClick={handleMapClick}
+              >
+             {/* Marcadores */}
+             {selectedData === "institutions" && institutions.map((institution, index) => {
+            const iconUrl = getIconUrl(institution.type);
+            return (
+                <Marker
+                  key={index}
+                  position={{ lat: institution.latitude, lng: institution.longitude }}
+                  icon={{
+                    url: iconUrl,
+                    scaledSize: new google.maps.Size(70, 70), // Tamaño pequeño
+                  }}
+                  onClick={() => handleMarkerClick(institution)}
+                />
+              );
+              })}
+              {/* Mostrar los marcadores de accidentes */}
+        
+             
+        {/*      {selectedData === "accidents" && accidents.map((accident, index) => {
+                const [latitude, longitude] = accident.location.split(",").map(parseFloat);
+
+                if (isNaN(latitude) || isNaN(longitude)) {
+                  console.warn(`Invalid coordinates for accident at index ${index}: ${latitude}, ${longitude}`);
+                  return null; // No crear el marcador si las coordenadas son inválidas
+                }
+
+                return (
+                  <Marker
+                    key={accident.id}
+                    position={{ lat: latitude, lng: longitude }}
+                    icon={{
+                      path: google.maps.SymbolPath.CIRCLE,
+                      fillColor: "red",
+                      fillOpacity: 0.8,
+                      strokeColor: "white",
+                      strokeWeight: 2,
+                      scale: 6,
+                    }}
+                    onClick={() => alert(`Accidente: ${accident.accidentTypes.join(", ")}, Reportado por: ${accident.reporter}`)}
+                  />
+                );
+              })}  */}
+        {selectedMarker && (
+      <InfoWindow
+      position={{
+        lat: selectedMarker.latitude,
+        lng: selectedMarker.longitude,
+      }}
+      onCloseClick={() => setSelectedMarker(null)}
+    >
+      <div className="bg-[#5932EA] text-white p-4 rounded-lg shadow-lg w-60">
+        <h3 className="text-lg font-semibold">{selectedMarker.name}</h3>
+        <p><strong>Descripción:</strong> {selectedMarker.description}</p>
+        <p><strong>Teléfono:</strong> {selectedMarker.phone}</p>
+        <p><strong>Tipo:</strong> {selectedMarker.type}</p>
+        <p><strong>Condado:</strong> {selectedMarker.county}</p>
+      </div>
+    </InfoWindow>
+    
+        )}
+      </GoogleMap>
+    </LoadScript>
+
+          <div className="mt-4 p-4 bg-gray-100 rounded-lg shadow-lg">
+          <h2 className="text-xl font-bold">Lista de Accidentes</h2>
+          <ul className="list-none space-y-2 mt-2">
+            {reports.map((report) => (
+              <li key={report.id} className="p-2 bg-white rounded-lg shadow hover:bg-gray-200">
+                <p><strong>Reportado por:</strong> {report.reporter}</p>
+                <p><strong>Institución:</strong> {report.institution}</p>
+                <p><strong>ubcacion:</strong> {report.location}</p>
+
+                <p><strong>Fecha:</strong> {report.time}</p>
+                <p><strong>Tipos de Accidente:</strong> {report.accidentTypes.join(', ')}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+        </div>
   );
 };
 

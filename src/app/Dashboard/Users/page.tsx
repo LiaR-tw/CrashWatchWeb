@@ -15,6 +15,7 @@ type User = {
 };
 
 const UsersTable: React.FC = () => {
+  
   const [currentView, setCurrentView] = useState<string>("table");
   const [filter, setFilter] = useState<string>("All"); // Estado para el filtro
   const [institutionTypes, setInstitutionTypes] = useState<string[]>([]); // Estado para los tipos de institución

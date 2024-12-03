@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import CheckInstitutions from "./CheckInstitutions";
-
+import { GoogleMap, Marker } from "@react-google-maps/api";
 interface RequestAccidentProps {
   accidentId: number;
   onBack: () => void;
@@ -13,20 +13,34 @@ const RequestAccident: React.FC<RequestAccidentProps> = ({ accidentId, onBack })
   const [currentView, setCurrentView] = useState<"details" | "institutions">("details");
   const [modalType, setModalType] = useState<"delete" | "finalize" | null>(null);
 
+  const [center, setCenter] = useState({ lat: -17.38333333, lng: -66.16666667 }); // Default center
+
+ 
   useEffect(() => {
+    // Función para cargar los datos del accidente desde la base de datos
     const fetchAccidentData = async () => {
       try {
         const response = await fetch(`http://localhost:3005/ReportsV/${accidentId}`);
         if (!response.ok) throw new Error("Failed to fetch accident data.");
         const data = await response.json();
         setAccidentData(data);
+
+        // Actualizar las coordenadas en el estado center
+        if (data.latitude && data.longitude) {
+          setCenter({ lat: data.latitude, lng: data.longitude });
+        }
       } catch (err) {
         console.error("Error fetching accident data:", err);
       }
     };
 
+    // Cargar los datos del accidente cada vez que cambia el ID
     fetchAccidentData();
   }, [accidentId]);
+
+  if (!accidentData) {
+    return <div>Cargando...</div>;
+  }
 
   const updateStatus = async (newStatus: number) => {
     setIsUpdating(true);
@@ -79,7 +93,7 @@ const RequestAccident: React.FC<RequestAccidentProps> = ({ accidentId, onBack })
   const isEditable = accidentData.status === 1;
   const isFinalizable = accidentData.status === 2;
 
-  return (
+  return (  
     <div className="container mx-auto px-6 py-8">
       <button
         onClick={onBack}
@@ -93,8 +107,22 @@ const RequestAccident: React.FC<RequestAccidentProps> = ({ accidentId, onBack })
         <p><strong>Descripción:</strong> {accidentData.description}</p>
         <p><strong>Reportado por:</strong> {accidentData.user?.name} {accidentData.user?.lastname}</p>
         <p><strong>Latitud:</strong> {accidentData.latitude}</p>
-        <p><strong>Longitud:</strong> {accidentData.longitude}</p>
+         <p><strong>Longitud:</strong> {accidentData.longitude}</p>
 
+      <div>
+        <h3>Ubicación del Accidente</h3>
+        
+          <GoogleMap
+            mapContainerStyle={{ width: "100%", height: "400px" }}
+            center={center} // Establecer el centro del mapa con las coordenadas del accidente
+            zoom={12}
+           
+          >
+            <Marker position={center} /> {/* Coloca un marcador en las coordenadas obtenidas */}
+          </GoogleMap>
+          
+       
+      </div>
         {/* Imágenes */}
         {accidentData.images && accidentData.images.length > 0 && (
           <div className="mt-6">
