@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { jwtDecode } from "jwt-decode"; // Asegúrate de tener esta dependencia instalada
+import jwtDecode from "jwt-decode"; // Asegúrate de tener esta dependencia instalada
 
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);

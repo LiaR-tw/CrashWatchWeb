@@ -375,20 +375,29 @@ app.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const query = 'SELECT * FROM "User" WHERE email = $1';
+    // Consulta para obtener el usuario con su contraseña y rol
+    const query = `
+      SELECT id, name, email, password, 
+             (SELECT name FROM "Rol" WHERE "Rol".id = "User"."idRol") AS rol
+      FROM "User"
+      WHERE email = $1
+    `;
     const result = await pool.query(query, [email]);
 
+    // Verificar si el usuario existe
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
     const user = result.rows[0];
+
+    // Verificar la contraseña
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       return res.status(401).json({ message: 'Contraseña incorrecta' });
     }
 
-    // Verificar que el JWT_SECRET está definido
+    // Verificar que JWT_SECRET esté definido
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
       return res.status(500).json({ message: 'Se ha producido un error en el servidor (JWT_SECRET no definido)' });
@@ -399,26 +408,25 @@ app.post('/login', async (req, res) => {
       { 
         id: user.id, 
         email: user.email,
-        rol: user.rol // Incluir el rol en el payload
+        rol: user.rol 
       },
       jwtSecret,
       { expiresIn: "7d" } // Expiración en 7 días
     );
 
-    // Configurar la cookie
+    // Configurar la cookie con el token
     res.cookie("authToken", token, {
-      httpOnly: true, // Evitar acceso desde JavaScript
+      httpOnly: true,  // No permitir acceso desde JavaScript
       secure: process.env.NODE_ENV === "production", // Solo en HTTPS en producción
-      sameSite: "strict", // Prevenir CSRF
+      sameSite: "strict", // Evitar CSRF
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
     });
 
-    // Responder con el token en la respuesta
-    res.status(200).json({ message: 'Login exitoso', token, rol:user.rol }); // Devolver el token en la respuesta
-
+    // Responder con el mensaje de éxito
+    res.status(200).json({ message: 'Login exitoso', token, rol: user.rol }); // Token también se podría devolver en el cuerpo si es necesario
   } catch (error) {
-    console.error('Error al autenticar usuario:', error);
-    res.status(500).json({ message: 'Error en el servidor', error: error.message });
+    console.error('Error durante el login:', error);
+    res.status(500).json({ message: 'Error en el servidor' });
   }
 });
 

@@ -2,59 +2,39 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { jwtDecode } from "jwt-decode";
+import jwtDecode  from "jwt-decode";
 
 export default function Login() {
   const [token, setToken] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<"login" | "changePassword">("login");
   const [email, setEmail] = useState("");
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-
+  
   const router = useRouter();
 
   // Efecto para verificar autenticación
   useEffect(() => {
-    if (!localStorage.getItem("authToken")) 
-      return; // No ejecuta el efecto si el token no está definido
+    const storedToken = localStorage.getItem("authToken");
 
-    const checkAuthentication = async () => {
-      try {
-        const response = await fetch('http://localhost:3005/users/me', {
-          method: 'GET',
-          credentials: 'include',
-        });
+    // Si ya existe un token, redirigir a la página correspondiente según el rol
+    if (storedToken) {
+      const decodedToken: any = jwtDecode(storedToken);
+      const userRole = decodedToken?.rol;
 
-        const data = await response.json();
-
-        if (response.ok) {
-          const userRole = data.user?.rol;
-
-          if (userRole === "Ciudadano") {
-            router.replace("/NoAccess");
-          } else if (userRole === "Institucional") {
-            router.replace("/Dashboard/Institutionalist");
-          } else if (userRole === "Administrativo") {
-            router.replace("/Dashboard/Administrator");
-          } else {
-            setError("Role not recognized.");
-            router.replace("/Login");
-          }
-        } else {
-          router.replace("/Login");
-        }
-      } catch (error) {
-        console.error("Error in authentication check:", error);
-        setError("Something went wrong.");
-        router.replace("/Login");
+      // Redirigir dependiendo del rol
+      if (userRole === "Ciudadano") {
+        router.replace("/NoAccess");
+      } else if (userRole === "Institucional") {
+        router.replace("/Dashboard/Institutionalist");
+      } else if (userRole === "Administrativo") {
+        router.replace("/Dashboard/Administrator");
       }
-    };
-
-    checkAuthentication();
-  }, [router, token]);
-
+    }
+  }, [router]);
   // Manejar login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,17 +54,20 @@ export default function Login() {
 
       if (response.ok) {
         const receivedToken = data.token;
+        
 
         if (receivedToken) {
-          setToken(receivedToken); // Almacenar token en el estado
-          const decodedToken = jwtDecode<{ role: string }>(receivedToken);
+          localStorage.setItem("authToken", receivedToken); // Guardar en localStorage
 
+          setToken(receivedToken); // Almacenar token en el estado
+          const decodedToken = jwtDecode<{ rol: string }>(receivedToken);
+          console.log(decodedToken);
           // Redirigir según el rol (opcional, puedes manejarlo después)
-          if (decodedToken.role === "Ciudadano") {
+          if (decodedToken.rol == "Ciudadano") {
             router.replace("/NoAccess");
-          } else if (decodedToken.role === "Institucional") {
+          } else if (decodedToken.rol == "Institucional") {
             router.replace("/Dashboard/Institutionalist");
-          } else if (decodedToken.role === "Administrativo") {
+          } else if (decodedToken.rol == "Administrativo") {
             router.replace("/Dashboard/Administrator");
           } else {
             setError("Role not recognized.");

@@ -11,6 +11,7 @@ import MapView from "./Map/page";
 import UsersTable from "./Users/page";
 import Profile from "./Profile/page";
 import { useRouter } from "next/navigation";
+import jwtDecode from "jwt-decode"; 
 
 type ViewType =
   | "map"
@@ -23,65 +24,56 @@ type ViewType =
   | "Profile";
 
 const Dashboard: React.FC = () => {
+  const [token, setToken] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<ViewType>("institutions");
   const [error, setError] = useState<string | null>(null);
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const fetchUserRole = async () => {
-      try {
-        const response = await fetch("http://localhost:3005/users/me", {
-          method: "GET",
-          credentials: "include", // Enviar cookies
-        });
+    // Comprobar si el token existe en localStorage
+    const storedToken = localStorage.getItem("authToken");
+    console.log(storedToken);
 
-        if (!response.ok) {
-          if (response.status === 401 || response.status === 403) {
-            setError("No autorizado o token inválido");
-            router.push("/Login");
-          } else {
-            setError("Error desconocido");
-          }
-          setIsAuthorized(false);
-          return;
-        }
+    if (!storedToken) {
+      setIsAuthorized(false);
+      router.replace("/Login"); // Redirigir si no hay token
+      return;
+    }
 
-        const data = await response.json();
-
-        if (data?.rol === "Administrativo") {
-          setIsAuthorized(true);
-        } else {
-          setError("No tienes permisos para acceder a esta página");
-          setIsAuthorized(false);
-          router.push("/Unauthorized");
-        }
-      } catch (err) {
-        console.error("Error al obtener datos protegidos:", err);
-        setError("Error de conexión al servidor");
+    // Decodificar el token JWT para obtener el rol del usuario
+    try {
+      const decodedToken: any = jwtDecode(storedToken);
+      const userRole = decodedToken?.rol;
+        
+      if (!userRole) {
+        setError("No role found in token");
         setIsAuthorized(false);
-        router.push("/Login");
+        router.replace("/Login");
+        return;
       }
-    };
 
-    fetchUserRole();
+      // Verificar el rol del usuario y redirigir según corresponda
+      if (userRole === "Ciudadano") {
+        setIsAuthorized(false);
+        router.replace("/NoAccess");
+      } else if (userRole === "Institucional") {
+        setIsAuthorized(true);
+        router.replace("/NoAccess"); // Cambiar a la vista de instituciones
+      } else if (userRole === "Administrativo") {
+        setIsAuthorized(true); // Cambiar a la vista de reportes
+      } else {
+        setError("Rol no reconocido");
+        setIsAuthorized(false);
+        router.replace("/NoAccess");
+      }
+    } catch (error) {
+      console.error("Error decodificando el token:", error);
+      setError("Token inválido");
+      setIsAuthorized(false);
+      router.replace("/NoAccess");
+    }
   }, [router]);
-
-  if (isAuthorized === null) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <p>Verificando tus permisos...</p>
-      </div>
-    );
-  }
-
-  if (!isAuthorized) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-red-500 text-lg">{error || "Acceso no autorizado"}</p>
-      </div>
-    );
-  }
 
   // Diccionario para componentes
   const viewComponents: Record<ViewType, React.ReactNode> = {

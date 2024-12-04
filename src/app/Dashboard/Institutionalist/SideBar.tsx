@@ -45,24 +45,31 @@ const Sidebar: React.FC<SidebarProps> = ({ onChangeView }) => {
 
   const handleSignOut = async () => {
     try {
+      // Primero eliminamos el token del localStorage
+      localStorage.removeItem("authToken");
+  
+      // Luego, hacemos la solicitud de cierre de sesión en el servidor
       const response = await fetch("http://localhost:3005/logout", {
         method: "POST",
-        credentials: "include",
+        credentials: "include", // Asegúrate de incluir las cookies si es necesario
       });
-
+  
       if (response.ok) {
         console.log("Sesión cerrada correctamente");
+  
+        // Redirigir a la página de login después de eliminar el token
         window.location.replace("/Login");
       } else {
+        // Si la respuesta no es exitosa, mostramos el error
         console.error("Error al cerrar sesión:", await response.text());
         alert("Hubo un problema al cerrar la sesión. Intenta nuevamente.");
       }
     } catch (error) {
+      // Captura de errores en caso de fallos de red o en la solicitud
       console.error("Error en la solicitud de cierre de sesión:", error);
       alert("No se pudo conectar con el servidor. Revisa tu conexión.");
     }
   };
-
   return (
     <div className="fixed left-0 top-0 w-64 bg-white text-black shadow-lg h-screen flex flex-col z-10">
       <div className="p-4 font-extrabold text-4xl text-black border-b border-gray-300 shadow-md">
