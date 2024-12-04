@@ -80,7 +80,8 @@ const CheckInstitutions: React.FC<CheckInstitutionsProps> = ({ accidentId }) => 
   }
 
   if (isLoading) {
-    return <div className="text-center text-lg font-semibold">Cargando instituciones...</div>;
+    return <div className="text-center text-lg font-semibold">
+Loading institutions...</div>;
   }
 
   if (error) {
@@ -90,16 +91,16 @@ const CheckInstitutions: React.FC<CheckInstitutionsProps> = ({ accidentId }) => 
   return (
     <div className="container mx-auto px-8 py-6">
       <h1 className="text-2xl font-bold mb-4 text-gray-800 text-center">
-        Asignar Instituciones al Accidente ID: <span className="text-blue-500">{accidentId}</span>
+      Assign Institutions to the Accident
       </h1>
 
       <table className="min-w-full bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
         <thead className="bg-gradient-to-r from-[#4F46E5] to-[#6B7AE8] text-white">
           <tr>
-            <th className="py-3 px-6 text-left">Seleccionar</th>
-            <th className="py-3 px-6 text-left">Nombre</th>
-            <th className="py-3 px-6 text-left">Tipo</th>
-            <th className="py-3 px-6 text-left">Ciudad</th>
+            <th className="py-3 px-6 text-left">Select</th>
+            <th className="py-3 px-6 text-left">Name</th>
+            <th className="py-3 px-6 text-left">Type</th>
+            <th className="py-3 px-6 text-left">Country</th>
           </tr>
         </thead>
         <tbody>
@@ -129,13 +130,13 @@ const CheckInstitutions: React.FC<CheckInstitutionsProps> = ({ accidentId }) => 
           onClick={() => setIsModalOpen(true)}
           className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors duration-300"
         >
-          Asignar Instituciones
+       Assign Institutions
         </button>
         <button
           onClick={() => setIsAssigned(true)} // Regresar sin guardar
           className="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-colors duration-300"
         >
-          Cancelar
+          Cancel
         </button>
       </div>
 
@@ -144,14 +145,14 @@ const CheckInstitutions: React.FC<CheckInstitutionsProps> = ({ accidentId }) => 
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-6 w-96">
             <h2 className="text-lg font-bold text-gray-800 mb-4">
-              ¿Estás seguro de asignar las instituciones seleccionadas?
+            Are you sure you assign the selected institutions?
             </h2>
             <div className="flex justify-end gap-4">
               <button
                 onClick={() => setIsModalOpen(false)} // Cerrar el modal
                 className="bg-gray-300 px-4 py-2 rounded-lg hover:bg-gray-400"
               >
-                Cancelar
+                Cancel
               </button>
               <button
                 onClick={() => {
@@ -160,7 +161,7 @@ const CheckInstitutions: React.FC<CheckInstitutionsProps> = ({ accidentId }) => 
                 }}
                 className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
               >
-                Confirmar
+                Confirm
               </button>
             </div>
           </div>

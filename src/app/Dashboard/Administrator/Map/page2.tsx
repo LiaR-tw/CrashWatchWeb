@@ -199,7 +199,8 @@ const MapView: React.FC = () => {
         </div>
       )}
 
-      {/* Listado de Instituciones y Tipos */}
+  
+     
       <div style={{ marginTop: "20px" }}>
         <h3>Instituciones Cargadas:</h3>
         <ul>

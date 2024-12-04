@@ -94,7 +94,26 @@ const MapView: React.FC = () => {
     fetchReports();
   }, []);
 
-
+  const mapStyles = [
+    {
+      featureType: "poi",
+      elementType: "all",
+      stylers: [
+        {
+          visibility: "off",
+        },
+      ],
+    },
+    {
+      featureType: "landscape",
+      elementType: "all",
+      stylers: [
+        {
+          visibility: "on",
+        },
+      ],
+    },
+  ];
 
   // Función para obtener la URL del ícono en función del tipo de institución
   const getIconUrl = (type: string) => {
@@ -131,19 +150,20 @@ const MapView: React.FC = () => {
             className="bg-[#5932EA] text-white px-4 py-2 rounded-lg"
             onClick={() => handleButtonClick("institutions")}
           >
-            Ver Instituciones
+           View Institutions
           </button>
           <button
             className="bg-orange-500 text-white px-4 py-2 rounded-lg"
             onClick={() => handleButtonClick("accidents")}
           >
-            Historial De Accidentes
+      
+    Accident History
           </button>
           <button
             className="bg-red-500 text-white px-4 py-2 rounded-lg"
             onClick={() => handleButtonClick("ongoingAccidents")}
           >
-            Ver Accidentes en Curso
+            View Accidents in Progress
           </button>
     </div>
 
@@ -153,6 +173,9 @@ const MapView: React.FC = () => {
                 center={center}
                 zoom={15}
                 onClick={handleMapClick}
+                options={{
+                  styles: mapStyles, // Aplica los estilos personalizados para ocultar los puntos de interés
+                }}
               >
              {/* Marcadores */}
              {selectedData === "institutions" && institutions.map((institution, index) => {
@@ -245,34 +268,17 @@ const MapView: React.FC = () => {
     >
       <div className="bg-[#5932EA] text-white p-4 rounded-lg shadow-lg w-60">
         <h3 className="text-lg font-semibold">{selectedMarker.name}</h3>
-        <p><strong>Descripción:</strong> {selectedMarker.description}</p>
-        <p><strong>Teléfono:</strong> {selectedMarker.phone}</p>
-        <p><strong>Tipo:</strong> {selectedMarker.type}</p>
-        <p><strong>Condado:</strong> {selectedMarker.county}</p>
+        <p><strong>Description:</strong> {selectedMarker.description}</p>
+        <p><strong>Phone:</strong> {selectedMarker.phone}</p>
+        <p><strong>Type:</strong> {selectedMarker.type}</p>
+        <p><strong>Country:</strong> {selectedMarker.county}</p>
       </div>
     </InfoWindow>
     
         )}
       </GoogleMap>
     </LoadScript>
-
-            <div className="mt-4 p-4 bg-gray-100 rounded-lg shadow-lg">
-          <h2 className="text-xl font-bold">Lista de Accidentes</h2>
-          <ul className="list-none space-y-2 mt-2">
-            {reports.map((report) => (
-              <li key={report.id} className="p-2 bg-white rounded-lg shadow hover:bg-gray-200">
-                <p><strong>Reportado por:</strong> {report.reporter}</p>
-                <p><strong>Institución:</strong> {report.institution}</p>
-                <p><strong>Ubicación:</strong> {report.location}</p>
-                <p><strong>Hora:</strong> {report.time}</p>
-                <p><strong>Tipos de accidente:</strong> {report.accidentTypes.join(', ')}</p>
-                <p><strong>Estado:</strong> {report.status === 1 ? 'Activo' : report.status === 2 ? 'Resuelto' : 'Desconocido'}</p> {/* Ejemplo de traducción de status */}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        </div>
+    </div>
   );
 };
 

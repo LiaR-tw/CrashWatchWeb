@@ -114,26 +114,31 @@ const InstitutionsTable: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredInstitutions.map((institution, index) => (
-                <tr key={index} className="border-b hover:bg-gray-50 transition-all duration-200">
-                  <td className="py-3 px-6">{institution.name}</td>
-                  <td className="py-3 px-6">{institution.type}</td>
-                  <td className="py-3 px-6">{institution.phone}</td>
-                  <td className="py-3 px-6">{institution.address}</td>
-                  <td className="py-3 px-6">{institution.county}</td>
-                  <td className="py-3 px-6">
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                        institution.status === 1
-                          ? "bg-green-200 text-green-700"
-                          : "bg-red-200 text-red-700"
-                      }`}
-                    >
-                      {institution.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+            {filteredInstitutions
+  .filter((institution) => institution.status === 1) // Filtra solo las instituciones con status 1
+  .map((institution, index) => (
+    <tr key={index} className="border-b hover:bg-gray-50 transition-all duration-200">
+      <td className="py-3 px-6">{institution.name}</td>
+      <td className="py-3 px-6">{institution.type}</td>
+      <td className="py-3 px-6">{institution.phone}</td>
+      <td className="py-3 px-6">{institution.address}</td>
+      <td className="py-3 px-6">{institution.county}</td>
+      <td className="py-3 px-6">
+        <span
+          className={`px-3 py-1 rounded-full text-sm font-semibold ${
+            institution.status === 1
+              ? "bg-green-200 text-green-700"
+              : "bg-red-200 text-red-700"
+          }`}
+        >
+          {institution.status === 1 ? "Active" : "Inactive"}
+        </span>
+      </td>
+    </tr>
+  ))}
+
+
+              
             </tbody>
           </table>
           <div className="mt-6 text-center">

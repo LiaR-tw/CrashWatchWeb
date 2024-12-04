@@ -59,7 +59,7 @@ const ReportsTable: React.FC = () => {
         <table className="min-w-full bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
           <thead className="bg-gradient-to-r from-[#4F46E5] to-[#6B7AE8] text-white">
             <tr>
-              <th className="py-3 px-6 text-left">ID</th>
+        
               <th className="py-3 px-6 text-left">Reportado por</th>
               <th className="py-3 px-6 text-left">Institución</th>
               <th className="py-3 px-6 text-left">Ubicación</th>
@@ -74,7 +74,7 @@ const ReportsTable: React.FC = () => {
                 key={report.id}
                 className="border-b hover:bg-gray-50 transition-all duration-200"
               >
-                <td className="py-3 px-6">{report.id}</td>
+               
                 <td className="py-3 px-6">{report.reporter}</td>
                 <td className="py-3 px-6">{report.institution}</td>
                 <td className="py-3 px-6">{report.location}</td>

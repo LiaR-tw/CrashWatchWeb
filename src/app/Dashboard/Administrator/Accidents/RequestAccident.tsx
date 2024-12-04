@@ -39,7 +39,7 @@ const RequestAccident: React.FC<RequestAccidentProps> = ({ accidentId, onBack })
   }, [accidentId]);
 
   if (!accidentData) {
-    return <div>Cargando...</div>;
+    return <div>Charging...</div>;
   }
 
   const updateStatus = async (newStatus: number) => {
@@ -99,18 +99,21 @@ const RequestAccident: React.FC<RequestAccidentProps> = ({ accidentId, onBack })
         onClick={onBack}
         className="mb-6 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
       >
-        Volver
+       Return
       </button>
 
       <div className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-2xl font-bold mb-4 text-gray-800">Detalles del Accidente</h2>
-        <p><strong>Descripción:</strong> {accidentData.description}</p>
-        <p><strong>Reportado por:</strong> {accidentData.user?.name} {accidentData.user?.lastname}</p>
-        <p><strong>Latitud:</strong> {accidentData.latitude}</p>
-         <p><strong>Longitud:</strong> {accidentData.longitude}</p>
+        <h2 className="text-2xl font-bold mb-4 text-gray-800">Accident Details</h2>
+        <p><strong>Description:</strong> {accidentData.description}</p>
+        <p><strong>
+        Reported by</strong> {accidentData.user?.name} {accidentData.user?.lastname}</p>
+        <p><strong>
+        Latitude:</strong> {accidentData.latitude}</p>
+         <p><strong>Length:</strong> {accidentData.longitude}</p>
 
       <div>
-        <h3>Ubicación del Accidente</h3>
+        <h3>
+        Accident Location</h3>
         
           <GoogleMap
             mapContainerStyle={{ width: "100%", height: "400px" }}
@@ -126,7 +129,8 @@ const RequestAccident: React.FC<RequestAccidentProps> = ({ accidentId, onBack })
         {/* Imágenes */}
         {accidentData.images && accidentData.images.length > 0 && (
           <div className="mt-6">
-            <h3 className="text-xl font-bold mb-2">Imágenes:</h3>
+            <h3 className="text-xl font-bold mb-2">Images
+            :</h3>
             <div className="grid grid-cols-2 gap-4">
               {accidentData.images.map((image: string, index: number) => (
                 <img
@@ -149,8 +153,8 @@ const RequestAccident: React.FC<RequestAccidentProps> = ({ accidentId, onBack })
               controls
               style={{ maxHeight: "300px" }}
             >
-              <source src={accidentData.video} type="video/mp4" />
-              Tu navegador no soporta videos.
+              <source src={accidentData.video} type="video/mp4" />          
+              Your browser does not support videos.
             </video>
           </div>
         )}
@@ -161,7 +165,7 @@ const RequestAccident: React.FC<RequestAccidentProps> = ({ accidentId, onBack })
             <h3 className="text-xl font-bold mb-2">Audio:</h3>
             <audio className="w-full rounded shadow" controls>
               <source src={accidentData.audio} type="audio/mpeg" />
-              Tu navegador no soporta audio.
+              Your browser does not support audio.
             </audio>
           </div>
         )}
@@ -178,7 +182,7 @@ const RequestAccident: React.FC<RequestAccidentProps> = ({ accidentId, onBack })
             className="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600"
             disabled={isUpdating}
           >
-            Confirmar
+           Confirm
           </button>
 
          
@@ -187,7 +191,8 @@ const RequestAccident: React.FC<RequestAccidentProps> = ({ accidentId, onBack })
               className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600"
               disabled={isUpdating}
             >
-              Eliminar Accidente
+                  
+              Eliminate Accident
             </button>
           </div>
         )}
@@ -200,7 +205,7 @@ const RequestAccident: React.FC<RequestAccidentProps> = ({ accidentId, onBack })
               className="px-4 py-2 rounded-lg bg-purple-500 text-white hover:bg-purple-600"
               disabled={isUpdating}
             >
-              Finalizar Accidente
+              End Accident
             </button>
           </div>
         )}
@@ -220,7 +225,7 @@ const RequestAccident: React.FC<RequestAccidentProps> = ({ accidentId, onBack })
                 onClick={closeModal}
                 className="bg-gray-300 text-black px-4 py-2 rounded-lg"
               >
-                Cancelar
+                Cancel
               </button>
               <button
                 onClick={() => updateStatus(modalType === "delete" ? 0 : 3)} // Confirmar acción

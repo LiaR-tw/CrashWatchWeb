@@ -45,7 +45,7 @@ const AccidentsView: React.FC = () => {
   }
 
   if (isLoading) {
-    return <div className="text-center text-lg font-semibold">Cargando...</div>;
+    return <div className="text-center text-lg font-semibold">Charging...</div>;
   }
 
   if (error) {
@@ -69,7 +69,8 @@ const AccidentsView: React.FC = () => {
             {/* Nombre del usuario en la parte superior */}
             <div className="bg-gray-100 px-4 py-2">
               <h1 className="text-gray-800">
-                Reportado por: {accident.user?.name} {accident.user?.lastname || ""}
+                              
+                Reported by: {accident.user?.name} {accident.user?.lastname || ""}
               </h1>
             </div>
 
@@ -83,7 +84,7 @@ const AccidentsView: React.FC = () => {
                 />
               ) : (
                 <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
-                  No hay imagen disponible
+                  No image available
                 </div>
               )}
             </div>
@@ -91,12 +92,14 @@ const AccidentsView: React.FC = () => {
             {/* Detalles del accidente */}
             <div className="p-4">
               <h2 className="font-bold text-lg text-gray-800 mb-2">
-                Descripción: {accident.description}
+                  Description: {accident.description}
               </h2>
 
               {/* Estado del accidente */}
               <div className="mb-4">
-                <h3 className="font-bold text-gray-800 mb-1">Estado:</h3>
+                <h3 className="font-bold text-gray-800 mb-1">
+                  State
+                  :</h3>
                 <p
                   className={`text-sm font-semibold ${
                     accident.status === 1
@@ -107,15 +110,15 @@ const AccidentsView: React.FC = () => {
                   }`}
                 >
                   {accident.status === 1
-                    ? "No Revisado"
+                    ? "Not Reviewed"
                     : accident.status === 2
-                    ? "Aceptado"
-                    : "Desconocido"}
+                    ? "Accepted"
+                    : "A stranger"}
                 </p>
               </div>
 
               {/* Instituciones */}
-              <h3 className="font-bold text-gray-800 mb-2">Instituciones:</h3>
+              <h3 className="font-bold text-gray-800 mb-2">Institutions:</h3>
               <ul className="list-disc pl-5 mb-4">
                 {accident.institutions.map((institution: any) => (
                   <li key={institution.id} className="text-sm text-gray-600">
@@ -133,7 +136,7 @@ const AccidentsView: React.FC = () => {
                     : "bg-green-300 text-gray-700 hover:bg-green-400"
                 }`}
               >
-                {accident.status === 1 ? "Confirmar Accidente" : "Ver Accidente"}
+                {accident.status === 1 ? "Confirm Accident" : "View Accident"}
               </button>
             </div>
           </div>
