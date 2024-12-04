@@ -23,48 +23,69 @@ type ViewType =
   | "Profile";
 
 const Dashboard: React.FC = () => {
-  const [currentView, setCurrentView] = useState<ViewType>("institutions"); // Default view set to institutions
+  const [currentView, setCurrentView] = useState<ViewType>("institutions");
   const [error, setError] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const fetchProtectedData = async () => {
+    const fetchUserRole = async () => {
       try {
-        const response = await fetch("http://localhost:3005/user/dashboard", {
+        const response = await fetch("http://localhost:3005/users/me", {
           method: "GET",
           credentials: "include", // Enviar cookies
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          console.log("Datos protegidos:", data);
-          setIsAuthenticated(true); // Usuario autenticado
-        } else if (response.status === 401 || response.status === 403) {
-          setIsAuthenticated(false); // Usuario no autenticado
-          setError("No autorizado o token inválido");
-          router.push("/Login"); // Redirigir al login
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            setError("No autorizado o token inválido");
+            router.push("/Login");
+          } else {
+            setError("Error desconocido");
+          }
+          setIsAuthorized(false);
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data?.rol === "Administrativo") {
+          setIsAuthorized(true);
         } else {
-          setError("Error desconocido");
+          setError("No tienes permisos para acceder a esta página");
+          setIsAuthorized(false);
+          router.push("/Unauthorized");
         }
       } catch (err) {
         console.error("Error al obtener datos protegidos:", err);
         setError("Error de conexión al servidor");
-        setIsAuthenticated(false); // Usuario no autenticado
-        router.push("/Login"); // Redirigir al login
+        setIsAuthorized(false);
+        router.push("/Login");
       }
     };
 
-    fetchProtectedData();
+    fetchUserRole();
   }, [router]);
 
-  if (isAuthenticated === null) {
-    return <div>Loading...</div>;
+  if (isAuthorized === null) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p>Verificando tus permisos...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthorized) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-red-500 text-lg">{error || "Acceso no autorizado"}</p>
+      </div>
+    );
   }
 
   // Diccionario para componentes
   const viewComponents: Record<ViewType, React.ReactNode> = {
-    map:null,
+    map: null,
     accidents: <AccidentsView />,
     institutions: <InstitutionsTable />,
     reports: <ReportsView />,

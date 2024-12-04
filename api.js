@@ -231,17 +231,29 @@ app.put('/institutionTypes/:id', async (req, res) => {
 
 //INSTITUTION CRUD
 
-  app.get('/institutions', async (req, res) => {
-      try {
-        const result = await pool.query(`SELECT name, description, phone, address, latitude, longitude, status, 
-                                      (SELECT name FROM "InstitutionType" WHERE "InstitutionType".id = "Institution"."idInstitutionType") AS type,
-                                      (SELECT name FROM "County" WHERE "County".id = "Institution"."idCounty")AS county FROM "Institution"`);
-        res.json(result.rows);
-      } catch (error) {
-        console.error('Error fetching Institutions:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
-      }
-    });
+app.get('/institutions', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        id, 
+        name, 
+        description, 
+        phone, 
+        address, 
+        latitude, 
+        longitude, 
+        status, 
+        (SELECT name FROM "InstitutionType" WHERE "InstitutionType".id = "Institution"."idInstitutionType") AS type,
+        (SELECT name FROM "County" WHERE "County".id = "Institution"."idCounty") AS county
+      FROM 
+        "Institution"
+    `);
+    res.json(result.rows);  // Retorna las instituciones con su ID
+  } catch (error) {
+    console.error('Error fetching Institutions:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
   
   app.get('/institutions/:id', async (req, res) => {
     const  {id}  = req.params;
@@ -376,28 +388,41 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Contraseña incorrecta' });
     }
 
+    // Verificar que el JWT_SECRET está definido
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      return res.status(500).json({ message: 'Se ha producido un error en el servidor (JWT_SECRET no definido)' });
+    }
+
     // Crear el token JWT
-    const jwtSecret = process.env.JWT_SECRET; // Usa un valor seguro almacenado en .env
     const token = jwt.sign(
-      { id: user.id, email: user.email }, // Payload
+      { 
+        id: user.id, 
+        email: user.email,
+        rol: user.rol // Incluir el rol en el payload
+      },
       jwtSecret,
-      { expiresIn: "7d" } // Expiración
+      { expiresIn: "7d" } // Expiración en 7 días
     );
 
     // Configurar la cookie
     res.cookie("authToken", token, {
-      httpOnly: true, // Evita acceso desde JavaScript
+      httpOnly: true, // Evitar acceso desde JavaScript
       secure: process.env.NODE_ENV === "production", // Solo en HTTPS en producción
       sameSite: "strict", // Prevenir CSRF
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
     });
 
-    res.status(200).json({ message: 'Login exitoso' });
+    // Responder con el token en la respuesta
+    res.status(200).json({ message: 'Login exitoso', token, rol:user.rol }); // Devolver el token en la respuesta
+
   } catch (error) {
     console.error('Error al autenticar usuario:', error);
-    res.status(500).json({ message: 'Error en el servidor' });
+    res.status(500).json({ message: 'Error en el servidor', error: error.message });
   }
 });
+
+
 
 
 app.post('/logout', (req, res) => {
@@ -412,6 +437,35 @@ app.get("/dashboard", authenticateToken, (req, res) => {
 });
 
 //USERS CRUD
+
+app.delete('/users12/:id', async (req, res) => {
+  const { id } = req.params; // Obtener el id desde la URL
+
+  // Validar que el id sea un número (opcional, dependiendo de tu lógica)
+  if (!id || isNaN(id)) {
+    return res.status(400).json({ message: 'ID no válido' });
+  }
+
+  try {
+    // Consulta SQL para eliminar el usuario
+    const deleteQuery = `DELETE FROM "User" WHERE id = $1 RETURNING *`;
+
+    // Ejecutar la consulta
+    const result = await pool.query(deleteQuery, [id]);
+
+    // Si no se encuentra un usuario con ese ID
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    // Respuesta exitosa
+    res.status(200).json({ message: 'Usuario eliminado exitosamente' });
+  } catch (error) {
+    console.error('Error al eliminar el usuario:', error);
+    res.status(500).json({ message: 'Error al eliminar el usuario', error: error.message });
+  }
+});
+
 
 app.get('/users', async (req, res) => {
   try {
@@ -428,7 +482,8 @@ app.get('/users', async (req, res) => {
 
 
 app.post('/users', async (req, res) => {
-    const {name,
+  const {
+    name,
     lastname,
     email,
     ci,
@@ -439,46 +494,98 @@ app.post('/users', async (req, res) => {
     latitude,
     longitude,
     idCounty,
-    idRol} = req.body;
-    const saltRounds = 10;
-  
-    // Validar que los campos requeridos no estén vacíos
-    if (!name || !lastname || !email || !ci || !phone || !username || !password || !status || !latitude || !longitude || !idCounty || !idRol) {
-      return res.status(400).json({ message: 'Todos los campos son obligatorios' });
-    }
-  
-    try {
+    idRol,
+    idInstitution
+  } = req.body;
 
-      const hashedPassword = await bcrypt.hash(password, saltRounds);
-      const query = `
-        INSERT INTO "User" (name, lastname, email, ci, phone, username, password, status, latitude, longitude, "idCounty", "idRol")
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-        RETURNING id, name, lastname, email, latitude, longitude, ci, phone, username, password, status, "registerDate", "lastUpdate", "idCounty", "idRol"`;
-  
-      const result = await pool.query(query, [
-        name,
-        lastname, 
-        email, 
-        ci, 
-        phone, 
-        username, 
-        hashedPassword, 
-        status, 
-        latitude, 
-        longitude, 
-        idCounty, 
-        idRol
-      ]);
-  
-      res.status(201).json({
-        message: 'Usuario creado exitosamente',
-        user: result.rows[0]
-      });
-    } catch (error) {
-      console.error('Error al crear el usuario:', error);
-      res.status(500).json({ message: 'Error en el servidor' });
+  const saltRounds = 10;
+  // Validación de campos
+  if (!name || !lastname || !email || !ci || !phone || !username || !password || !status || !latitude || !longitude || !idCounty || !idRol) {
+    return res.status(400).json({ message: 'Todos los campos obligatorios deben ser completados' });
+  }
+
+  try {
+    // Validación de si el email ya existe
+    const emailExistsQuery = `SELECT * FROM "User" WHERE email = $1`;
+    const emailCheck = await pool.query(emailExistsQuery, [email]);
+
+    if (emailCheck.rows.length > 0) {
+      return res.status(400).json({ message: 'El email ya está registrado' });
     }
-  });
+
+    // Validación de si el username ya existe
+    const usernameExistsQuery = `SELECT * FROM "User" WHERE username = $1`;
+    const usernameCheck = await pool.query(usernameExistsQuery, [username]);
+
+    if (usernameCheck.rows.length > 0) {
+      return res.status(400).json({ message: 'El username ya está registrado' });
+    }
+
+    // Hash de la contraseña
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Consulta SQL para insertar el usuario
+    const query = `
+      INSERT INTO "User" 
+        (name, lastname, email, ci, phone, username, password, status, latitude, longitude, "idCounty", "idRol", "idInstitution", address)
+      VALUES 
+        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      RETURNING id, name, lastname, email, ci, phone, username, password, status, "registerDate", "lastUpdate", "idCounty", "idRol", "idInstitution", address;`;
+
+    // Insertar los valores
+    const result = await pool.query(query, [
+      name,
+      lastname,
+      email,
+      ci,
+      phone,
+      username,
+      hashedPassword, // Contraseña hasheada
+      status,
+      latitude,
+      longitude,
+      idCounty,
+      idRol,
+      idInstitution || null,  // Este es el campo opcional
+      null // Si address es opcional, lo dejamos como `null` por defecto
+    ]);
+
+    res.status(201).json({
+      message: 'Usuario creado exitosamente',
+      user: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error al crear el usuario:', error);
+    res.status(500).json({ message: 'Error en el servidor' });
+  }
+});
+
+
+
+
+app.get('/users12', async (req, res) => {
+  try {
+    const query = `SELECT id,
+    name AS name,
+    lastname,
+    email,
+    ci,
+    phone,
+    username,
+    (SELECT name FROM "Rol" WHERE "Rol".id = "User"."idRol") AS rol,
+    (SELECT name FROM "Institution" WHERE "Institution".id = "User"."idInstitution") AS institution,
+    status
+FROM 
+    "User";`;
+    const result = await pool.query(query);
+
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener usuarios:', error);
+    res.status(500).json({ message: 'Error en el servidor' });
+  }
+});
+
 
 
   app.put('/users/:id', async (req, res) => {
@@ -505,6 +612,36 @@ app.post('/users', async (req, res) => {
     }
   });
 
+
+  app.get('/users/me', async (req, res) => {
+    try {
+      const token = req.cookies.authToken;
+  
+      if (!token) {
+        return res.status(401).json({ message: 'No autorizado' });
+      }
+  
+      const jwtSecret = process.env.JWT_SECRET;
+      const decoded = jwt.verify(token, jwtSecret);
+
+      const query = 'SELECT u.id, u.name, u.lastname, u.email, u.ci, u.phone, u.username, u.status, r.name AS rol FROM "User" u LEFT JOIN "Rol" r ON u."idRol" = r.id WHERE u.id = $1';
+      const result = await pool.query(query, [decoded.id]);
+  
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+  
+      const user = result.rows[0];
+  
+      console.log("Rol del usuario:", user.rol); // Verificar el valor del rol en el backend
+  
+      res.status(200).json({ user });
+    } catch (error) {
+      console.error('Error al verificar token:', error);
+      res.status(500).json({ message: 'Error en el servidor' });
+    }
+  });
+  
 
 
 

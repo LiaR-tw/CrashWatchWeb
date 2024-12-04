@@ -1,50 +1,67 @@
 "use client";
 
-import { useEffect } from "react";
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { jwtDecode } from "jwt-decode";
 
 export default function Login() {
-  const [currentView, setCurrentView] = useState<"login" | "changePassword">(
-    "login"
-  );
+  const [token, setToken] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<"login" | "changePassword">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const router = useRouter();
 
+  // Efecto para verificar autenticación
   useEffect(() => {
+    if (!localStorage.getItem("authToken")) 
+      return; // No ejecuta el efecto si el token no está definido
+
     const checkAuthentication = async () => {
       try {
-        const response = await fetch("http://localhost:3005/user/dashboard", {
-          method: "GET",
-          credentials: "include", // Incluye las cookies en la petición
+        const response = await fetch('http://localhost:3005/users/me', {
+          method: 'GET',
+          credentials: 'include',
         });
 
+        const data = await response.json();
+
         if (response.ok) {
-          setIsAuthenticated(true);
-          router.replace("/Dashboard");
+          const userRole = data.user?.rol;
+
+          if (userRole === "Ciudadano") {
+            router.replace("/NoAccess");
+          } else if (userRole === "Institucional") {
+            router.replace("/Dashboard/Institutionalist");
+          } else if (userRole === "Administrativo") {
+            router.replace("/Dashboard/Administrator");
+          } else {
+            setError("Role not recognized.");
+            router.replace("/Login");
+          }
+        } else {
+          router.replace("/Login");
         }
       } catch (error) {
-        console.error("Error verificando autenticación:", error);
-        setIsAuthenticated(false);
-        router.replace("/Login"); // Asegura redirección al Login en caso de error
+        console.error("Error in authentication check:", error);
+        setError("Something went wrong.");
+        router.replace("/Login");
       }
     };
 
     checkAuthentication();
-  }, [router]);
+  }, [router, token]);
 
+  // Manejar login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     try {
-      const response = await fetch("http://localhost:3005/login", {
+      const response = await fetch(`http://localhost:3005/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -53,11 +70,30 @@ export default function Login() {
         credentials: "include",
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        router.push("/Dashboard");
+        const receivedToken = data.token;
+
+        if (receivedToken) {
+          setToken(receivedToken); // Almacenar token en el estado
+          const decodedToken = jwtDecode<{ role: string }>(receivedToken);
+
+          // Redirigir según el rol (opcional, puedes manejarlo después)
+          if (decodedToken.role === "Ciudadano") {
+            router.replace("/NoAccess");
+          } else if (decodedToken.role === "Institucional") {
+            router.replace("/Dashboard/Institutionalist");
+          } else if (decodedToken.role === "Administrativo") {
+            router.replace("/Dashboard/Administrator");
+          } else {
+            setError("Role not recognized.");
+          }
+        } else {
+          setError("No token found");
+        }
       } else {
-        const errorData = await response.json();
-        setError(errorData.message || "Login failed");
+        setError(data.message || "Login failed");
       }
     } catch (err) {
       console.error("Error in request:", err);
@@ -73,7 +109,7 @@ export default function Login() {
     }
 
     try {
-      const response = await fetch("http://localhost:3005/change-password", {
+      const response = await fetch(`http://localhost:3005/change-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -89,7 +125,7 @@ export default function Login() {
         setError(errorData.message || "Password change failed");
       }
     } catch (err) {
-      console.error("Error in request:", err);
+      console.error("Error en la solicitud:", err);
       setError("Something went wrong.");
     }
   };
@@ -97,9 +133,7 @@ export default function Login() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br bg-white">
       <div className="bg-white shadow-lg rounded-lg p-8 max-w-md w-full">
-        <div className="p-4 font-extrabold text-4xl text-black text-center">
-          Crash Watcher
-        </div>
+        <div className="p-4 font-extrabold text-4xl text-black text-center">Crash Watcher</div>
 
         {currentView === "login" ? (
           <>
@@ -113,9 +147,7 @@ export default function Login() {
 
             <form className="space-y-4" onSubmit={handleLogin}>
               <div>
-                <label htmlFor="email" className="block text-blue-900 font-medium">
-                  Email
-                </label>
+                <label htmlFor="email" className="block text-blue-900 font-medium">Email</label>
                 <input
                   id="email"
                   type="email"
@@ -127,12 +159,7 @@ export default function Login() {
                 />
               </div>
               <div>
-                <label
-                  htmlFor="password"
-                  className="block text-blue-900 font-medium"
-                >
-                  Password
-                </label>
+                <label htmlFor="password" className="block text-blue-900 font-medium">Password</label>
                 <input
                   id="password"
                   type="password"
@@ -175,12 +202,7 @@ export default function Login() {
 
             <form className="space-y-4" onSubmit={handleSaveNewPassword}>
               <div>
-                <label
-                  htmlFor="newPassword"
-                  className="block text-blue-900 font-medium"
-                >
-                  New Password
-                </label>
+                <label htmlFor="newPassword" className="block text-blue-900 font-medium">New Password</label>
                 <input
                   id="newPassword"
                   type="password"
@@ -192,12 +214,7 @@ export default function Login() {
                 />
               </div>
               <div>
-                <label
-                  htmlFor="confirmPassword"
-                  className="block text-blue-900 font-medium"
-                >
-                  Confirm Password
-                </label>
+                <label htmlFor="confirmPassword" className="block text-blue-900 font-medium">Confirm Password</label>
                 <input
                   id="confirmPassword"
                   type="password"
@@ -212,7 +229,7 @@ export default function Login() {
                 type="submit"
                 className="w-full bg-blue-800 text-white py-2 rounded-lg hover:bg-blue-900 transition duration-300"
               >
-                Save and Return
+                Save New Password
               </button>
             </form>
           </>

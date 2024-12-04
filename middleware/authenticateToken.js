@@ -10,7 +10,7 @@ const authenticateToken = (req, res, next) => {
   try {
     const jwtSecret = process.env.JWT_SECRET;
     const user = jwt.verify(token, jwtSecret);
-    req.user = user; // Adjunta la información del usuario a `req`
+    req.user = user;
     next();
   } catch (error) {
     console.error("Error al validar token:", error);

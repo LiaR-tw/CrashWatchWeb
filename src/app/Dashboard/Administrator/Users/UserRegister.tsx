@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { GoogleMap, Marker } from "@react-google-maps/api";
 import UsersTable from "./page";
+
 type County = {
   id: string;
   name: string;
@@ -12,11 +13,19 @@ type Role = {
   id: string;
   name: string;
 };
+type Institucion = {
+  id: number; // ID de la institución
+  name: string; // Nombre de la institución
+
+};
+
 
 function RegisterForm({ onRegister }: { onRegister: () => void }) {
   
   const [counties, setCounties] = useState<County[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
+  const [institutions, setInstitutions] = useState<Institucion[]>([]);  // Estado para almacenar las instituciones
+
   const [formData, setFormData] = useState({
     name: "",
     lastname: "",
@@ -30,6 +39,8 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
     longitude: "",
     idCounty: "",
     idRol: "",
+    idInstitution : "", // Aquí cambiaste de "=" a ":"
+
   });
 
   const [center, setCenter] = useState({ lat: -17.38333333, lng: -66.16666667 });
@@ -49,61 +60,114 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
 
   // Obtener los países y roles desde la API
   useEffect(() => {
-    const fetchCountiesAndRoles = async () => {
+    // Llamada a las APIs de "counties", "roles" e "institutions"
+    const fetchData = async () => {
       try {
+        // Llamadas a la API de counties y roles
         const countyResponse = await fetch("http://localhost:3005/counties");
         const roleResponse = await fetch("http://localhost:3005/roles");
+        const institutionResponse = await fetch("http://localhost:3005/institutions"); // Cambié la URL a /institutions
 
-        if (!countyResponse.ok || !roleResponse.ok) {
-          throw new Error("Failed to fetch counties or roles.");
+        if (!countyResponse.ok || !roleResponse.ok || !institutionResponse.ok) {
+          throw new Error("Failed to fetch counties, roles, or institutions.");
         }
 
+        // Parsear las respuestas JSON
         const countiesData = await countyResponse.json();
         const rolesData = await roleResponse.json();
+        const institutionsData = await institutionResponse.json(); // Aquí obtienes las instituciones
 
+        // Actualizar el estado con los datos obtenidos
         setCounties(countiesData);
         setRoles(rolesData);
+        setInstitutions(institutionsData); // Asignamos las instituciones al estado
       } catch (error) {
-        console.error("Error fetching counties or roles:", error);
+        console.error("Error fetching counties, roles, or institutions:", error);
       }
     };
 
-    fetchCountiesAndRoles();
-  }, []);
+    fetchData(); // Llamamos a la función para obtener los datos
+  }, []); 
 
+  const [showInstitutionSelect, setShowInstitutionSelect] = useState(false); 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
       [name]: value,
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const response = await fetch("http://localhost:3005/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to register user");
-      }
-
-      const data = await response.json();
-      console.log("User registered:", data);
-
-      onRegister();
       
-    } catch (error) {
-      console.error("Error registering user:", error);
+    });
+    if (name === "idRol" && value === "4") { // "3" es el ID del rol "Institucional"
+      setShowInstitutionSelect(true); // Mostrar el combobox de institución
+    } else if (name === "idRol") {
+      setShowInstitutionSelect(false); // Ocultar el combobox de institución si no es "Institucional"
     }
   };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
+    // Validación de los campos
+    if (!formData.name || !formData.lastname || !formData.email || !formData.ci || !formData.phone || !formData.username || !formData.password) {
+        alert("Por favor, completa todos los campos requeridos.");
+        return;
+    }
+
+    if (!formData.latitude || !formData.longitude) {
+        alert("Por favor, selecciona una ubicación en el mapa.");
+        return;
+    }
+
+    if (!formData.idCounty || !formData.idRol ) {
+        alert("Por favor, selecciona el condado, el rol ");
+        return;
+    }
+    if (!formData.idInstitution ) {
+      alert("Por favor, selecciona la Institucion ");
+      return;
+  }
+    // Prepare the data for the POST request
+    const payload = {
+        name: formData.name,
+        lastname: formData.lastname,
+        email: formData.email,
+        ci: formData.ci,
+        phone: formData.phone,
+        username: formData.username,
+        password: formData.password,
+        status: formData.status,  // Ya tiene valor por defecto
+        latitude: formData.latitude,
+        longitude: formData.longitude,
+        idCounty: formData.idCounty,
+        idRol: formData.idRol,
+        idInstitution: formData.idInstitution || null,  // El ID de la institución, puede ser null
+       
+    };
+
+    try {
+        const response = await fetch("http://localhost:3005/users", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+        });
+
+        // Verificar si la respuesta fue exitosa
+        if (response.ok) {
+            console.log("Usuario registrado exitosamente");
+            onRegister(); // Llama a la función onRegister para actualizar la lista
+        } else {
+            const errorData = await response.json(); // Obtener el mensaje de error del servidor
+            alert(errorData.message || "Error al registrar el usuario. Intenta nuevamente.");
+        }
+    } catch (error) {  
+        console.error("Error al registrar el usuario:", error);
+        alert("Error al registrar el usuario. Intenta nuevamente.");
+    }
+};
+
+  
+  
   return (
     <div className="flex items-center justify-center min-h-screen bg-white p-6">
       <div className="bg-white shadow-2xl rounded-lg p-8 max-w-lg w-full border border-gray-200">
@@ -115,7 +179,7 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div>
             <label htmlFor="name" className="block text-gray-800 font-medium">
-              Name
+              Name:
             </label>
             <input
               id="name"
@@ -130,7 +194,7 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
 
           <div>
             <label htmlFor="lastname" className="block text-gray-800 font-medium">
-              Surname
+              Surname:
             </label>
             <input
               id="lastname"
@@ -145,7 +209,7 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
 
           <div>
             <label htmlFor="username" className="block text-gray-800 font-medium">
-              Username
+              Username:
             </label>
             <input
               id="username"
@@ -161,7 +225,7 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="email" className="block text-gray-800 font-medium">
-                Email
+                Email:
               </label>
               <input
                 id="email"
@@ -175,7 +239,7 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
             </div>
             <div>
               <label htmlFor="phone" className="block text-gray-800 font-medium">
-                Phone
+                Phone:
               </label>
               <input
                 id="phone"
@@ -191,7 +255,7 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
 
           <div>
             <label htmlFor="ci" className="block text-gray-800 font-medium">
-              CI
+              CI:
             </label>
             <input
               id="ci"
@@ -206,7 +270,7 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
 
           <div>
             <label htmlFor="password" className="block text-gray-800 font-medium">
-              Password
+              Password:
             </label>
             <input
               id="password"
@@ -220,7 +284,7 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
           </div>
 
         
-          <h3>Select Location</h3>
+          <h3>Select Location:</h3>
     
         <GoogleMap
           mapContainerStyle={{ width: "100%", height: "400px" }}
@@ -255,7 +319,7 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
 
           <div>
             <label htmlFor="idCounty" className="block text-gray-800 font-medium">
-              Select County
+              Select County:
             </label>
             <select
               id="idCounty"
@@ -275,7 +339,7 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
 
           <div>
             <label htmlFor="idRol" className="block text-gray-800 font-medium">
-              Select Role
+              Select Role:
             </label>
             <select
               id="idRol"
@@ -292,13 +356,36 @@ function RegisterForm({ onRegister }: { onRegister: () => void }) {
               ))}
             </select>
           </div>
-         
+
+          {showInstitutionSelect && ( // Solo mostrar este bloque si el rol es "Institucional"
+            <>
+              <label htmlFor="idInstitution" className="block text-gray-800 font-medium">
+                Select institution to which you belong:
+              </label>
+              <select
+                id="idInstitution"
+                name="idInstitution" // Asegúrate de que coincida con el estado
+                value={formData.idInstitution} // Esto asegura que el valor seleccionado esté reflejado en el estado
+                onChange={handleChange} // Llama al handler de cambio
+                className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm transition-all"
+              >
+                <option value="">Select an Institution</option>
+                {institutions.map((institution) => (
+                  <option key={institution.id} value={institution.id}>
+                    {institution.name}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
           <button
             type="submit"
             className="w-full mt-6 py-3 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all"
           >
             Register
           </button>
+          <div>
+      </div>
         </form>
       </div>
     </div>
