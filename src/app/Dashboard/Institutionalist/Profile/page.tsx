@@ -14,34 +14,47 @@ type User = {
 };
 
 const Profile: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]); // Estado para los usuarios obtenidos desde la API
-  const [user, setUser] = useState<User | null>(null); // Estado para el usuario seleccionado
+  const [user, setUser] = useState<User | null>(null); // Estado para almacenar el perfil del usuario
+  const [loading, setLoading] = useState<boolean>(true); // Indicador de carga
+  const [error, setError] = useState<string | null>(null); // Manejo de errores
 
   useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchUserProfile = async () => {
       try {
-        const response = await fetch("http://localhost:3005/users12"); // Cambia la URL si es necesario
+        const response = await fetch("http://localhost:3005/users/me", {
+          credentials: "include", // Permite enviar cookies con la solicitud
+        });
+
         if (!response.ok) {
-          throw new Error("Failed to fetch users.");
+          throw new Error(`Error: ${response.status} ${response.statusText}`);
         }
+
         const data = await response.json();
-        
-        // Suponiendo que el primer usuario es el que debe mostrarse
-        setUsers(data);
-        setUser(data[0]); // Asignar el primer usuario como el perfil
-      } catch (error) {
-        console.error("Error fetching users:", error);
+        setUser(data.user); // Asigna el perfil recibido desde el servidor
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false); // Detener indicador de carga
       }
     };
 
-    fetchUsers(); // Llama a la función para obtener usuarios
-  }, []); // La dependencia está vacía para solo ejecutarse una vez
+    fetchUserProfile();
+  }, []);
+
+  if (loading) {
+    return <p>Loading profile...</p>;
+  }
+
+  if (error) {
+    return <p className="text-red-600">Error: {error}</p>;
+  }
 
   return (
     <div className="p-8 bg-white rounded-lg shadow-lg w-full max-w-lg mx-auto">
-      <h1 className="text-3xl font-semibold text-gray-900 mb-6 text-center">User Profile</h1>
-      
-      {/* Verifica que 'user' no sea null antes de mostrar los datos */}
+      <h1 className="text-3xl font-semibold text-gray-900 mb-6 text-center">
+        User Profile
+      </h1>
+
       {user ? (
         <>
           <div className="flex justify-center items-center space-x-4 mb-6">
@@ -81,10 +94,17 @@ const Profile: React.FC = () => {
               <p className="text-lg font-semibold text-gray-700">Username:</p>
               <p className="text-xl text-gray-800">{user.username}</p>
             </div>
+
             <div>
               <p className="text-lg font-semibold text-gray-700">Role:</p>
               <p className="text-xl text-gray-800">{user.rol}</p>
             </div>
+
+            <div>
+              <p className="text-lg font-semibold text-gray-700">institution:</p>
+              <p className="text-xl text-gray-800">{user.institution}</p>
+            </div>
+
             <div>
               <p className="text-lg font-semibold text-gray-700">Status:</p>
               <p className="text-xl text-gray-800">{user.status === "1" ? "Active" : "Inactive"}</p>
@@ -92,7 +112,7 @@ const Profile: React.FC = () => {
           </div>
         </>
       ) : (
-        <p>Loading profile...</p> // Mensaje mientras se cargan los datos
+        <p>User profile not found.</p>
       )}
     </div>
   );

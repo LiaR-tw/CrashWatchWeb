@@ -623,32 +623,52 @@ FROM
 
   app.get('/users/me', async (req, res) => {
     try {
-      const token = req.cookies.authToken;
-  
-      if (!token) {
-        return res.status(401).json({ message: 'No autorizado' });
-      }
-  
-      const jwtSecret = process.env.JWT_SECRET;
-      const decoded = jwt.verify(token, jwtSecret);
+        const token = req.cookies.authToken;
 
-      const query = 'SELECT u.id, u.name, u.lastname, u.email, u.ci, u.phone, u.username, u.status, r.name AS rol FROM "User" u LEFT JOIN "Rol" r ON u."idRol" = r.id WHERE u.id = $1';
-      const result = await pool.query(query, [decoded.id]);
-  
-      if (result.rows.length === 0) {
-        return res.status(404).json({ message: 'Usuario no encontrado' });
-      }
-  
-      const user = result.rows[0];
-  
-      console.log("Rol del usuario:", user.rol); // Verificar el valor del rol en el backend
-  
-      res.status(200).json({ user });
+        if (!token) {
+            return res.status(401).json({ message: 'No autorizado' });
+        }
+
+        const jwtSecret = process.env.JWT_SECRET;
+        const decoded = jwt.verify(token, jwtSecret);
+
+        const query = `
+            SELECT 
+                u.id, 
+                u.name, 
+                u.lastname, 
+                u.email, 
+                u.ci, 
+                u.phone, 
+                u.username, 
+                u.status, 
+                u."idInstitution", 
+                r.name AS rol,
+                i.name AS institution
+            FROM 
+                "User" u
+            LEFT JOIN 
+                "Rol" r ON u."idRol" = r.id
+            LEFT JOIN 
+                "Institution" i ON u."idInstitution" = i.id
+            WHERE 
+                u.id = $1;
+        `;
+
+        const result = await pool.query(query, [decoded.id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        const user = result.rows[0];
+        res.status(200).json({ user });
     } catch (error) {
-      console.error('Error al verificar token:', error);
-      res.status(500).json({ message: 'Error en el servidor' });
+        console.error('Error al verificar token:', error);
+        res.status(500).json({ message: 'Error en el servidor' });
     }
-  });
+});
+
   
 
 

@@ -1,86 +1,96 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 
-type NewAccident = {
+
+type Accident = {
   id: number;
-  title: string;
-  date: string;
-  status: "Pending" | "Resolved";
+  reporter: string;
+  institution: string | null;
+  location: string;
+  time: string;
+  accidentTypes: string[];
+  status:number;
 };
-
-const newAccidents: NewAccident[] = [
-  { id: 1, title: "Minor Collision", date: "2024-11-05", status: "Pending" },
-  { id: 2, title: "Vehicle Breakdown", date: "2024-11-06", status: "Resolved" },
-  { id: 3, title: "Road Obstruction", date: "2024-11-07", status: "Pending" },
-];
-
 const ReportsNewAccidents: React.FC = () => {
-  const [selectedAccident, setSelectedAccident] = useState<NewAccident | null>(null);
+  const [reports, setReports] = useState<Accident[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const response = await fetch("http://localhost:3005/ReportsAcidentes"); // Cambia la URL según corresponda
+        if (!response.ok) throw new Error("Failed to fetch reports.");
+        const data = await response.json();
+
+        // Mapear los datos para mostrar solo la información requerida
+        const mappedReports = data.map((report: any) => ({
+          id: report.id,
+          reporter: `${report.user?.name || "Desconocido"} ${report.user?.lastname || ""}`, // Concatenamos el nombre y apellido
+          institution: report.institutions?.[0]?.name || "Sin institución asignada", // Solo tomamos la primera institución
+          location: `${report.latitude}, ${report.longitude}`, // Formateamos la ubicación
+          time: report.registerDate, // Fecha de registro
+          accidentTypes: report.accidentTypes?.map((type: any) => type.name) || ["Sin tipo"], // Mapeamos los tipos de accidentes a un arreglo de strings
+          status: report.status, // Status del accidente
+        }));
+
+        setReports(mappedReports); // Actualizamos el estado con los reportes mapeados
+      } catch (err) {
+        console.error("Error fetching reports:", err);
+        setError("Error al cargar los reportes.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchReports();
+  }, []);
+
+  if (isLoading) {
+    return <div className="text-center text-lg font-semibold">Charging...</div>;
+  }
   return (
     <div className="mt-6">
       <h2 className="text-3xl font-semibold mb-6 text-center text-gray-800">New Accidents</h2>
 
-      <div className="flex gap-6">
-        <div className={`w-${selectedAccident ? "2/3" : "full"} transition-all`}>
-          <table className="min-w-full bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <thead className="bg-gradient-to-r from-[#4F46E5] to-[#6B7AE8] text-white">
-              <tr>
-                <th className="py-3 px-6 text-left">ID</th>
-                <th className="py-3 px-6 text-left">Title</th>
-                <th className="py-3 px-6 text-left">Date</th>
-                <th className="py-3 px-6 text-left">Status</th>
-                <th className="py-3 px-6">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {newAccidents.map((accident) => (
-                <tr key={accident.id} className="border-b hover:bg-gray-50 transition-all duration-200">
-                  <td className="py-3 px-6">{accident.id}</td>
-                  <td className="py-3 px-6">{accident.title}</td>
-                  <td className="py-3 px-6">{accident.date}</td>
-                  <td className="py-3 px-6">
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                        accident.status === "Resolved"
-                          ? "bg-green-200 text-green-700"
-                          : "bg-yellow-200 text-yellow-800"
-                      }`}
-                    >
-                      {accident.status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-6 text-center">
-                    <button
-                      className="text-blue-500 hover:underline font-medium"
-                      onClick={() => setSelectedAccident(accident)}
-                    >
-                      View Details
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="mt-6">
 
-        {selectedAccident && (
-          <div className="w-1/3 bg-white p-6 shadow-lg rounded-lg border border-gray-200">
-            <h3 className="text-xl font-bold text-[#4F46E5] mb-4">Accident Details</h3>
-            <p className="mb-2 text-gray-700"><strong>ID:</strong> {selectedAccident.id}</p>
-            <p className="mb-2 text-gray-700"><strong>Title:</strong> {selectedAccident.title}</p>
-            <p className="mb-2 text-gray-700"><strong>Date:</strong> {selectedAccident.date}</p>
-            <p className="mb-4 text-gray-700"><strong>Status:</strong> {selectedAccident.status}</p>
-            <button
-              className="w-full py-2 bg-[#4F46E5] text-white rounded-lg hover:bg-[#6B7AE8] transition-colors duration-300"
-              onClick={() => setSelectedAccident(null)}
-            >
-              Close Details
-            </button>
-          </div>
-        )}
+      <div className="w-full">
+        <table className="min-w-full bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <thead className="bg-gradient-to-r from-[#4F46E5] to-[#6B7AE8] text-white">
+            <tr>            
+      
+            <th className="px-4 py-2">Reporter</th>
+            <th className="px-4 py-2">Institution</th>
+            <th className="px-4 py-2">Location</th>
+            <th className="px-4 py-2">Date</th>
+            <th className="px-4 py-2">Accident Types</th>
+            <th className="px-4 py-2">Status</th>
+
+            </tr>
+          </thead>
+          <tbody>
+              {reports
+                .filter(report => report.status === 2) // Filtramos los reportes con status 1
+                .map((report) => (
+                  <tr key={report.id}>
+                
+                    <td className="border px-4 py-2">{report.reporter}</td>
+                    <td className="border px-4 py-2">{report.institution}</td>
+                    <td className="border px-4 py-2">{report.location}</td>
+                    <td className="border px-4 py-2">{report.time}</td>
+                    <td className="border px-4 py-2">{report.accidentTypes.join(', ')}</td>
+                    <td className="border px-4 py-2">
+                      {report.status === 2 ? 'In Progress' : report.status}
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+
+        </table>
       </div>
+    </div>
     </div>
   );
 };

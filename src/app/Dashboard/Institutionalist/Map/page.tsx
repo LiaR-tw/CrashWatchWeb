@@ -94,7 +94,26 @@ const MapView: React.FC = () => {
     fetchReports();
   }, []);
 
-
+  const mapStyles = [
+    {
+      featureType: "poi",
+      elementType: "all",
+      stylers: [
+        {
+          visibility: "off",
+        },
+      ],
+    },
+    {
+      featureType: "landscape",
+      elementType: "all",
+      stylers: [
+        {
+          visibility: "on",
+        },
+      ],
+    },
+  ];
 
   // Función para obtener la URL del ícono en función del tipo de institución
   const getIconUrl = (type: string) => {
@@ -121,26 +140,7 @@ const MapView: React.FC = () => {
     setSelectedMarker(null); // Resetea el marcador seleccionado
   };
 
-  const mapStyles = [
-    {
-      featureType: "poi",
-      elementType: "all",
-      stylers: [
-        {
-          visibility: "off",
-        },
-      ],
-    },
-    {
-      featureType: "landscape",
-      elementType: "all",
-      stylers: [
-        {
-          visibility: "on",
-        },
-      ],
-    },
-  ];
+
   
   return (
     <div className="relative">
@@ -169,7 +169,7 @@ const MapView: React.FC = () => {
 
             <LoadScript googleMapsApiKey="AIzaSyClUE7K-Ytz6duQ6wLYFDNNSJyQSnFFgks">
               <GoogleMap
-                mapContainerStyle={{ width: "100%", height: "100vh" }}
+                mapContainerStyle={{ width: "100%", height: "78vh" }}
                 center={center}
                 zoom={15}
                 onClick={handleMapClick}
@@ -177,6 +177,7 @@ const MapView: React.FC = () => {
                   styles: mapStyles, // Aplica los estilos personalizados para ocultar los puntos de interés
                 }}
               >
+             {/* Marcadores */}
              {selectedData === "institutions" && institutions.map((institution, index) => {
             const iconUrl = getIconUrl(institution.type);
             return (
@@ -185,7 +186,7 @@ const MapView: React.FC = () => {
                   position={{ lat: institution.latitude, lng: institution.longitude }}
                   icon={{
                     url: iconUrl,
-                    scaledSize: new google.maps.Size(70, 70), // Tamaño pequeño
+                    scaledSize: new google.maps.Size(50, 50), // Tamaño pequeño
                   }}
                   onClick={() => handleMarkerClick(institution)}
                 />
@@ -213,7 +214,7 @@ const MapView: React.FC = () => {
                     icon={{
                       path: google.maps.SymbolPath.CIRCLE,
                       fillColor: "orange", 
-                      fillOpacity: 0.8,
+                      fillOpacity: 0.4,
                       strokeColor: "white",
                       strokeWeight: 2,
                       scale:10,
@@ -246,7 +247,7 @@ const MapView: React.FC = () => {
                     icon={{
                       path: google.maps.SymbolPath.CIRCLE,
                       fillColor: "red", 
-                      fillOpacity: 0.8,
+                      fillOpacity: 0.3,
                       strokeColor: "white",
                       strokeWeight: 2,
                       scale:30,
@@ -277,10 +278,7 @@ const MapView: React.FC = () => {
         )}
       </GoogleMap>
     </LoadScript>
-
-          
-
-        </div>
+    </div>
   );
 };
 

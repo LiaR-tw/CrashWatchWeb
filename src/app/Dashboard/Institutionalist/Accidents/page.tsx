@@ -6,29 +6,67 @@ const AccidentsView: React.FC = () => {
   const [accidents, setAccidents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-
+  const [user, setUser] = useState<any | null>(null);
+  
   useEffect(() => {
-    const fetchAccidents = async () => {
+    const fetchUserAndAccidents = async () => {
       try {
-        const response = await fetch("http://localhost:3005/ReportsV");
-        if (!response.ok) throw new Error("Failed to fetch accidents.");
-        const data = await response.json();
-
-        // Filtrar solo los accidentes con estado 1 o 2
-        const filteredAccidents = data.filter(
-          (accident: any) => accident.status === 1 || accident.status === 2
-        );
-
+        setIsLoading(true);
+  
+        // Obtener el perfil del usuario logueado
+        const userResponse = await fetch("http://localhost:3005/users/me", {
+          credentials: "include", // Permite enviar cookies
+        });
+  
+        if (!userResponse.ok) {
+          throw new Error("Failed to fetch user profile.");
+        }
+  
+        const userData = await userResponse.json();
+        setUser(userData.user);
+  
+        // Obtener los accidentes
+        const accidentResponse = await fetch("http://localhost:3005/ReportsV");
+  
+        if (!accidentResponse.ok) {
+          throw new Error("Failed to fetch accidents.");
+        }
+  
+        const accidentData = await accidentResponse.json();
+  
+        // Filtrar accidentes por estado y por idInstitution del usuario
+        const filteredAccidents = accidentData.filter((accident: any) => {
+          // Validamos que `institutions` sea un array válido
+          if (!accident.institutions || !Array.isArray(accident.institutions)) {
+            console.error("Invalid institutions data:", accident);
+            return false; // Ignoramos accidentes con instituciones inválidas
+          }
+        
+          // Verificamos si alguna institución tiene el id que coincide con el usuario
+          const hasMatchingInstitution = accident.institutions.some(
+            (institution: any) => institution.id === userData.user.idInstitution
+          );
+        
+          // Filtramos los accidentes con status 2 y que pertenezcan a la institución del usuario
+          return accident.status === 2 && hasMatchingInstitution;
+        });
+        
+        // Resultado
+        console.log("Filtered Accidents:", filteredAccidents);
         setAccidents(filteredAccidents);
-      } catch (err) {
-        console.error("Error fetching accidents:", err);
-        setError("Error fetching accidents.");
+
+        console.log(filteredAccidents);
+  
+        setAccidents(filteredAccidents);
+      } catch (err: any) {
+        console.error("Error fetching data:", err);
+        setError(err.message || "Error fetching data.");
       } finally {
         setIsLoading(false);
       }
     };
-
-    fetchAccidents();
+  
+    fetchUserAndAccidents();
   }, []);
 
   const handleReadMore = (accidentId: number) => {
@@ -66,15 +104,12 @@ const AccidentsView: React.FC = () => {
                 : "border-gray-300"
             }`}
           >
-            {/* Nombre del usuario en la parte superior */}
             <div className="bg-gray-100 px-4 py-2">
               <h1 className="text-gray-800">
-                              
                 Reported by: {accident.user?.name} {accident.user?.lastname || ""}
               </h1>
             </div>
 
-            {/* Imágenes del accidente */}
             <div className="relative h-48">
               {accident.images && accident.images.length > 0 ? (
                 <img
@@ -89,17 +124,12 @@ const AccidentsView: React.FC = () => {
               )}
             </div>
 
-            {/* Detalles del accidente */}
             <div className="p-4">
               <h2 className="font-bold text-lg text-gray-800 mb-2">
-                  Description: {accident.description}
+                Description: {accident.description}
               </h2>
-
-              {/* Estado del accidente */}
               <div className="mb-4">
-                <h3 className="font-bold text-gray-800 mb-1">
-                  State
-                  :</h3>
+                <h3 className="font-bold text-gray-800 mb-1">State:</h3>
                 <p
                   className={`text-sm font-semibold ${
                     accident.status === 1
@@ -113,11 +143,10 @@ const AccidentsView: React.FC = () => {
                     ? "Not Reviewed"
                     : accident.status === 2
                     ? "Accepted"
-                    : "A stranger"}
+                    : "Unknown"}
                 </p>
               </div>
 
-              {/* Instituciones */}
               <h3 className="font-bold text-gray-800 mb-2">Institutions:</h3>
               <ul className="list-disc pl-5 mb-4">
                 {accident.institutions.map((institution: any) => (
@@ -127,7 +156,6 @@ const AccidentsView: React.FC = () => {
                 ))}
               </ul>
 
-              {/* Botón Confirmar o Ver */}
               <button
                 onClick={() => handleReadMore(accident.id)}
                 className={`px-4 py-2 rounded-lg ${
